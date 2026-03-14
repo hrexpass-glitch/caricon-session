@@ -206,7 +206,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     <div class="timer-bar-bg"><div class="timer-bar" id="timerBar" style="width:100%"></div></div>
     <div class="timer-lbl" id="timerLbl">15分カウントダウン</div>
 
-    <button class="btn btn-full btn-primary" id="startBtn" onclick="startBoth()" style="margin-bottom:8px;font-size:15px;padding:14px">▶ スタート</button>
+    <button class="btn btn-full btn-primary" id="startBtn" onclick="toggleStart()" style="margin-bottom:8px;font-size:15px;padding:14px">▶ スタート</button>
 
     <div class="speaker-bar" id="speakerBar" style="margin-bottom:8px">
       <div class="speaker-label">現在の発言者</div>
@@ -214,10 +214,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
       <button class="switch-btn to-cl" id="switchBtn" onclick="switchSpeaker()">CLに切替</button>
     </div>
 
-    <div class="btn-row" style="margin-bottom:0">
-      <button class="btn btn-stop" id="stopAllBtn" onclick="stopAll()">■ 停止</button>
-      <button class="btn" onclick="resetTimerFull()">↺ リセット</button>
-    </div>
+    <button class="btn btn-full" id="resetBtn" onclick="resetTimerFull()" style="margin-bottom:0">↺ リセット</button>
 
     <div class="status" id="statusBar">
       <span class="status-dot"></span>
@@ -538,8 +535,10 @@ function onTimerEnd() {
   document.getElementById('timerModal').classList.add('show');
   if (isRecording) stopRec();
   setStatus('done','タイマー終了');
-  document.getElementById('startBtn').disabled = false;
-  document.getElementById('startBtn').textContent = '▶ スタート';
+  const btn = document.getElementById('startBtn');
+  btn.textContent = '▶ スタート';
+  btn.className = 'btn btn-full btn-primary';
+  btn.style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
   // 自動保存
   saveSession();
   toast('タイマー終了 — 自動保存しました ✓');
@@ -611,6 +610,14 @@ async function toggleRec() {
   }
 }
 
+function toggleStart() {
+  if (isTimerRunning || isRecording) {
+    stopAll();
+  } else {
+    startBoth();
+  }
+}
+
 async function startBoth() {
   if (isTimerRunning || isRecording) return;
   currentSpeaker = 'CC';
@@ -618,11 +625,13 @@ async function startBoth() {
   const ok = await startRec();
   startCountdown();
   document.getElementById('startBtn').disabled = true;
+  const btn = document.getElementById('startBtn');
+  btn.textContent = '■ 停止';
+  btn.className = 'btn btn-full btn-stop';
+  btn.style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
   if (ok) {
-    document.getElementById('startBtn').textContent = '⏱🎤 動作中…';
     setStatus('rec','録音中 + タイマー動作中');
   } else {
-    document.getElementById('startBtn').textContent = '⏱ タイマー動作中…';
     setStatus('timer','タイマー動作中（マイク未使用）');
   }
 }
@@ -630,8 +639,10 @@ async function startBoth() {
 function stopAll() {
   if (isRecording) stopRec();
   if (isTimerRunning) { clearInterval(timerInterval); isTimerRunning = false; }
-  document.getElementById('startBtn').disabled = false;
-  document.getElementById('startBtn').textContent = '▶ スタート';
+  const btn = document.getElementById('startBtn');
+  btn.textContent = '▶ スタート';
+  btn.className = 'btn btn-full btn-primary';
+  btn.style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
   updateTimerUI();
   setStatus('done','停止しました');
 }
