@@ -515,8 +515,6 @@ function toggleTimer() {
 function startCountdown() {
   if (isTimerRunning) return;
   isTimerRunning = true;
-  document.getElementById('timerBtn').textContent = '⏸ 一時停止';
-  document.getElementById('bothBtn').disabled = true;
   timerInterval = setInterval(() => {
     timerSecondsLeft--;
     updateTimerUI();
@@ -600,14 +598,14 @@ async function toggleRec() {
     stopRec();
     document.getElementById('recBtn').textContent = '🎤 録音';
     document.getElementById('recBtn').className = 'btn';
-    document.getElementById('bothBtn').disabled = false;
+    
     setStatus('done','録音停止');
   } else {
     const ok = await startRec();
     if (!ok) return;
     document.getElementById('recBtn').textContent = '🎤 停止';
     document.getElementById('recBtn').className = 'btn btn-danger';
-    document.getElementById('bothBtn').disabled = true;
+    
     setStatus('rec','録音中… マイク ON');
     updateSpeakerBar();
   }
