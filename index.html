@@ -522,6 +522,9 @@ function onTimerEnd() {
   setStatus('done','タイマー終了');
   document.getElementById('timerBtn').textContent = '⏱ タイマー';
   document.getElementById('bothBtn').disabled = false;
+  // 自動保存
+  saveSession();
+  toast('タイマー終了 — 自動保存しました ✓');
 }
 
 function dismissModal() { document.getElementById('timerModal').classList.remove('show'); }
