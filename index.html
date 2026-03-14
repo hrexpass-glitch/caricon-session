@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>面談記録メーカー</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root {
   --bg:#f7f7f5;--surface:#fff;--surface2:#f2f2f0;
@@ -123,6 +122,33 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 .modal-box{background:var(--surface);border-radius:16px;padding:28px;width:100%;max-width:340px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,.1)}
 .modal-big{font-size:56px;text-align:center;color:var(--ac);font-family:'Noto Serif JP',serif;margin-bottom:8px}
 .modal-msg{font-size:14px;text-align:center;color:var(--muted);letter-spacing:.08em;margin-bottom:20px}
+
+@media print {
+  .hdr-back, .hdr-btn, .fab, .card:has(.sec-lbl), .action-btn, .corr-bar,
+  .add-row-btn, .memo-hdr, .speaker-bar, .live-text, .status,
+  .timer-num, .timer-bar-bg, .timer-lbl, .btn-row, #bothBtn, .btn-danger,
+  #correctBtn, #pdfBtn { display: none !important; }
+  .page { display: block !important; padding: 0 !important; }
+  #page-list { display: none !important; }
+  #page-session { display: block !important; }
+  .card { border: none !important; box-shadow: none !important; margin: 0 !important; padding: 8px 0 !important; }
+  body { font-size: 12px !important; background: #fff !important; }
+  .hdr { position: static !important; box-shadow: none !important; border-bottom: 1px solid #ccc !important; padding: 8px 12px !important; }
+  .hdr-title { font-size: 14px !important; }
+  .field input { border: none !important; background: transparent !important; padding: 0 !important; font-size: 12px !important; }
+  .field label { font-size: 10px !important; }
+  .transcript-hdr { margin-bottom: 8px !important; }
+  .entry-card { break-inside: avoid !important; page-break-inside: avoid !important; margin-bottom: 6px !important; padding: 8px !important; border: 1px solid #ddd !important; }
+  .entry-ta { min-height: auto !important; font-size: 11px !important; }
+  .entry-sublbl { font-size: 8px !important; }
+  .memo-body { display: block !important; }
+  .memo-body.open, .memo-body { display: block !important; }
+  .memo-ta { border: none !important; background: transparent !important; font-size: 11px !important; min-height: auto !important; }
+  .label-pill { font-size: 9px !important; padding: 1px 6px !important; }
+  .del-btn { display: none !important; }
+  .count-badge { display: none !important; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
 </style>
 </head>
 <body>
@@ -159,6 +185,11 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 
   <div class="card">
     <div class="sec-lbl">タイマー &amp; 録音</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn" style="flex:1;font-weight:700;font-size:13px" onclick="setTimer(15)">⏱ 15分<br><span style="font-size:9px;font-weight:400;opacity:.7">国キャリ</span></button>
+      <button class="btn" style="flex:1;font-weight:700;font-size:13px" onclick="setTimer(30)">⏱ 30分<br><span style="font-size:9px;font-weight:400;opacity:.7">2級</span></button>
+      <button class="btn" style="flex:1;font-weight:700;font-size:13px" onclick="setTimer(45)">⏱ 45分<br><span style="font-size:9px;font-weight:400;opacity:.7">カスタム</span></button>
+    </div>
     <div class="field" style="margin-bottom:10px"><label>タイマー時間（分）</label><div style="display:flex;align-items:center;gap:10px"><input type="range" id="timerRange" min="1" max="60" value="15" oninput="onRangeChange(this.value)" style="flex:1;accent-color:var(--ac)"><span id="timerRangeVal" style="font-size:16px;font-weight:700;color:var(--ac);min-width:40px;text-align:right">15分</span></div></div>
     <div class="timer-num" id="timerDisplay">15:00</div>
     <div class="timer-bar-bg"><div class="timer-bar" id="timerBar" style="width:100%"></div></div>
@@ -386,6 +417,15 @@ function resetTimer() {
   resetTimerFull();
 }
 
+function setTimer(min) {
+  if (isTimerRunning) return;
+  TIMER_DURATION = min * 60;
+  timerSecondsLeft = TIMER_DURATION;
+  document.getElementById("timerRange").value = min;
+  document.getElementById("timerRangeVal").textContent = min + "分";
+  updateTimerUI();
+  toast(min + "分にセットしました");
+}
 function onRangeChange(val) {
   if (isTimerRunning) return;
   TIMER_DURATION = parseInt(val) * 60;
@@ -613,68 +653,11 @@ function setStatus(type,text) {
 }
 
 // PDF
-async function downloadPdf() {
-  const {jsPDF} = window.jspdf;
-  const doc = new jsPDF({unit:'mm',format:'a4',orientation:'landscape'});
-  const date=document.getElementById('sessionDate').value;
-  const ccName=document.getElementById('ccName').value||'CC';
-  const clName=document.getElementById('clName').value||'CL';
-  const memo=document.getElementById('memoText').value;
-  const pageW=297,pageH=210,mL=10,mR=10,mT=14,mB=10;
-  const contentW=pageW-mL-mR;
-  const colNo=12,colTr=90,colNt=80,colAd=contentW-colNo-colTr-colNt;
-  let y=mT;
-  function checkPage(h=12){if(y+h>pageH-mB){doc.addPage();y=mT;drawHdr(y);y+=10;}}
-  function drawHdr(ty){
-    doc.setFillColor(242,242,240);doc.rect(mL,ty,contentW,9,'F');
-    doc.setDrawColor(200,200,195);doc.setLineWidth(0.4);doc.rect(mL,ty,contentW,9,'S');
-    doc.setTextColor(100,100,95);doc.setFontSize(8);doc.setFont('helvetica','bold');
-    doc.text('NO.',mL+colNo/2,ty+5.5,{align:'center'});
-    doc.text('逐語録',mL+colNo+colTr/2,ty+5.5,{align:'center'});
-    doc.text('気づき・改善案・新案',mL+colNo+colTr+colNt/2,ty+5.5,{align:'center'});
-    doc.text('アドバイス',mL+colNo+colTr+colNt+colAd/2,ty+5.5,{align:'center'});
-    [colNo,colNo+colTr,colNo+colTr+colNt].forEach(x=>doc.line(mL+x,ty,mL+x,ty+9));
-  }
-  doc.setFillColor(255,255,255);doc.rect(0,0,pageW,12,'F');
-  doc.setDrawColor(220,220,215);doc.setLineWidth(0.4);doc.line(0,12,pageW,12);
-  doc.setTextColor(80,60,20);doc.setFont('helvetica','bold');doc.setFontSize(11);doc.text('面談記録',mL,8);
-  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120,118,110);
-  doc.text('実施日：'+date,mL+35,8);doc.text('CC：'+ccName,mL+90,8);doc.text('CL：'+clName,mL+135,8);
-  y=14;drawHdr(y);y+=10;
-  entries.forEach((e,i)=>{
-    const trl=doc.splitTextToSize(e.text||'',colTr-6);
-    const ntl=doc.splitTextToSize(e.notes||'',colNt-4);
-    const adl=doc.splitTextToSize(e.advice||'',colAd-4);
-    const rowH=Math.max(trl.length,ntl.length,adl.length,2)*4.5+5;
-    checkPage(rowH);
-    doc.setFillColor(i%2===0?252:246,i%2===0?252:246,i%2===0?250:243);doc.rect(mL,y,contentW,rowH,'F');
-    doc.setDrawColor(210,210,205);doc.setLineWidth(0.2);doc.rect(mL,y,contentW,rowH,'S');
-    [colNo,colNo+colTr,colNo+colTr+colNt].forEach(x=>doc.line(mL+x,y,mL+x,y+rowH));
-    doc.setTextColor(160,158,150);doc.setFontSize(9);doc.setFont('helvetica','bold');
-    doc.text(String(i+1).padStart(2,'0'),mL+colNo/2,y+rowH/2+1,{align:'center'});
-    const lc=e.label==='CC'?[45,122,94]:[90,74,142];
-    doc.setFillColor(...lc);doc.roundedRect(mL+colNo+2,y+2,14,5,1,1,'F');
-    doc.setTextColor(255,255,255);doc.setFontSize(7);doc.setFont('helvetica','bold');
-    doc.text(e.label,mL+colNo+9,y+5.8,{align:'center'});
-    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(30,30,28);
-    trl.forEach((l,li)=>doc.text(l,mL+colNo+2,y+9+li*4.5));
-    doc.setTextColor(80,80,75);ntl.forEach((l,li)=>doc.text(l,mL+colNo+colTr+2,y+4+li*4.5));
-    doc.setTextColor(130,85,20);adl.forEach((l,li)=>doc.text(l,mL+colNo+colTr+colNt+2,y+4+li*4.5));
-    y+=rowH;
-  });
-  if(memo.trim()){
-    y+=6;checkPage(20);
-    const ml=doc.splitTextToSize(memo,contentW-8);
-    const mh=ml.length*5+12;
-    doc.setFillColor(253,249,240);doc.setDrawColor(200,180,130);doc.setLineWidth(0.3);doc.rect(mL,y,contentW,mh,'FD');
-    doc.setTextColor(130,100,40);doc.setFontSize(8);doc.setFont('helvetica','bold');doc.text('総合メモ・フィードバック',mL+4,y+6);
-    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(60,50,30);
-    ml.forEach((l,li)=>doc.text(l,mL+4,y+12+li*5));
-  }
-  const pages=doc.internal.getNumberOfPages();
-  for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFontSize(8);doc.setTextColor(180,178,170);doc.text(p+'/'+pages,pageW-mR,pageH-4,{align:'right'});}
-  doc.save('面談記録_'+(date||'').replace(/-/g,'')+'.pdf');
-  toast('PDFを出力しました ✦');
+function downloadPdf() {
+  // メモを開いておく
+  document.getElementById('memoBody').classList.add('open');
+  document.getElementById('memoToggle').classList.add('open');
+  window.print();
 }
 
 function toast(msg) {
