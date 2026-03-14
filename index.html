@@ -186,9 +186,8 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
   <div class="card">
     <div class="sec-lbl">タイマー &amp; 録音</div>
     <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button class="btn" style="flex:1;font-weight:700;font-size:13px" onclick="setTimer(15)">⏱ 15分<br><span style="font-size:9px;font-weight:400;opacity:.7">国キャリ</span></button>
-      <button class="btn" style="flex:1;font-weight:700;font-size:13px" onclick="setTimer(30)">⏱ 30分<br><span style="font-size:9px;font-weight:400;opacity:.7">2級</span></button>
-      <button class="btn" style="flex:1;font-weight:700;font-size:13px" onclick="setTimer(45)">⏱ 45分<br><span style="font-size:9px;font-weight:400;opacity:.7">カスタム</span></button>
+      <button class="btn" style="flex:1;font-weight:700;font-size:14px" onclick="setTimer(15)">⏱ 15分<br><span style="font-size:9px;font-weight:400;opacity:.7">国キャリ</span></button>
+      <button class="btn" style="flex:1;font-weight:700;font-size:14px" onclick="setTimer(30)">⏱ 30分<br><span style="font-size:9px;font-weight:400;opacity:.7">1級・2級</span></button>
     </div>
     <div class="field" style="margin-bottom:10px"><label>タイマー時間（分）</label><div style="display:flex;align-items:center;gap:10px"><input type="range" id="timerRange" min="1" max="60" value="15" oninput="onRangeChange(this.value)" style="flex:1;accent-color:var(--ac)"><span id="timerRangeVal" style="font-size:16px;font-weight:700;color:var(--ac);min-width:40px;text-align:right">15分</span></div></div>
     <div class="timer-num" id="timerDisplay">15:00</div>
