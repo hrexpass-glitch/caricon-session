@@ -624,7 +624,6 @@ async function startBoth() {
   updateSpeakerBar();
   const ok = await startRec();
   startCountdown();
-  document.getElementById('startBtn').disabled = true;
   const btn = document.getElementById('startBtn');
   btn.textContent = '■ 停止';
   btn.className = 'btn btn-full btn-stop';
