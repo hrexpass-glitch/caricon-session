@@ -206,13 +206,9 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     <div class="timer-bar-bg"><div class="timer-bar" id="timerBar" style="width:100%"></div></div>
     <div class="timer-lbl" id="timerLbl">15分カウントダウン</div>
 
-    <div class="btn-row">
-      <button class="btn" id="timerBtn" onclick="toggleTimer()">⏱ タイマー</button>
-      <button class="btn" id="recBtn" onclick="toggleRec()">🎤 録音</button>
-    </div>
-    <button class="btn btn-full" id="bothBtn" onclick="startBoth()" style="margin-bottom:8px;background:var(--cc-bg);border-color:var(--ac-bd);color:var(--ac);font-weight:700">⏱🎤 同時スタート</button>
+    <button class="btn btn-full btn-primary" id="startBtn" onclick="startBoth()" style="margin-bottom:8px;font-size:15px;padding:14px">▶ スタート</button>
     <div class="btn-row" style="margin-bottom:0">
-      <button class="btn btn-stop btn-full" id="stopAllBtn" onclick="stopAll()">■ 停止</button>
+      <button class="btn btn-stop" id="stopAllBtn" onclick="stopAll()">■ 停止</button>
       <button class="btn" onclick="resetTimerFull()">↺ リセット</button>
     </div>
 
@@ -221,7 +217,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
       <span id="statusTxt">タイマーまたは録音を開始してください</span>
     </div>
 
-    <div class="speaker-bar" id="speakerBar" style="display:none">
+    <div class="speaker-bar" id="speakerBar">
       <div class="speaker-label">現在の発言者</div>
       <div class="speaker-name cc" id="speakerName">CC</div>
       <button class="switch-btn to-cl" id="switchBtn" onclick="switchSpeaker()">CLに切替</button>
@@ -232,7 +228,8 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     <!-- 録音再生 -->
     <div class="audio-player" id="audioPlayer">
       <div class="audio-label">🎧 録音データ</div>
-      <audio id="audioEl" controls></audio>
+      <audio id="audioEl" controls style="width:100%;margin-bottom:8px"></audio>
+      <button class="btn btn-full" onclick="downloadAudio()" style="font-size:12px;padding:8px">↓ 録音データをダウンロード</button>
     </div>
   </div>
 
@@ -375,6 +372,8 @@ function newSession() {
   document.getElementById('memoText').value = '';
   document.getElementById('session-hdr-title').textContent = today + 'の面談';
   document.getElementById('audioPlayer').classList.remove('show');
+  currentSpeaker = 'CC';
+  updateSpeakerBar();
   renderEntries();
   showPage('page-session');
 }
@@ -430,7 +429,7 @@ function saveSession() {
 }
 
 function backToList() {
-  stopAll();
+  if (isRecording || isTimerRunning) stopAll();
   showPage('page-list');
   renderSessionList();
 }
@@ -510,8 +509,8 @@ function resetTimerFull() {
   clearInterval(timerInterval);
   isTimerRunning = false;
   timerSecondsLeft = TIMER_DURATION;
-  document.getElementById('timerBtn').textContent = '⏱ タイマー';
-  document.getElementById('bothBtn').disabled = false;
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('startBtn').textContent = '▶ スタート';
   updateTimerUI();
 }
 
@@ -520,8 +519,8 @@ function onTimerEnd() {
   document.getElementById('timerModal').classList.add('show');
   if (isRecording) stopRec();
   setStatus('done','タイマー終了');
-  document.getElementById('timerBtn').textContent = '⏱ タイマー';
-  document.getElementById('bothBtn').disabled = false;
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('startBtn').textContent = '▶ スタート';
   // 自動保存
   saveSession();
   toast('タイマー終了 — 自動保存しました ✓');
@@ -572,7 +571,7 @@ function stopRec() {
   isRecording = false;
   if (speechRecognition) { try { speechRecognition.stop(); } catch(e) {} speechRecognition = null; }
   document.getElementById('liveText').classList.remove('show');
-  document.getElementById('speakerBar').style.display = 'none';
+
 }
 
 async function toggleRec() {
@@ -589,7 +588,7 @@ async function toggleRec() {
     document.getElementById('recBtn').className = 'btn btn-danger';
     document.getElementById('bothBtn').disabled = true;
     setStatus('rec','録音中… マイク ON');
-    showSpeakerBar();
+    updateSpeakerBar();
   }
 }
 
@@ -598,31 +597,22 @@ async function startBoth() {
   const ok = await startRec();
   if (!ok) return;
   startCountdown();
-  document.getElementById('recBtn').textContent = '🎤 停止';
-  document.getElementById('recBtn').className = 'btn btn-danger';
-  document.getElementById('bothBtn').disabled = true;
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('startBtn').textContent = '録音中…';
   setStatus('rec','録音中 + タイマー動作中');
-  showSpeakerBar();
+  updateSpeakerBar();
 }
 
 function stopAll() {
   if (isRecording) stopRec();
   if (isTimerRunning) { clearInterval(timerInterval); isTimerRunning = false; }
-  document.getElementById('recBtn').textContent = '🎤 録音';
-  document.getElementById('recBtn').className = 'btn';
-  document.getElementById('timerBtn').textContent = '⏱ タイマー';
-  document.getElementById('bothBtn').disabled = false;
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('startBtn').textContent = '▶ スタート';
   updateTimerUI();
   setStatus('done','停止しました');
 }
 
 // ─── Speaker ───
-function showSpeakerBar() {
-  currentSpeaker = 'CC';
-  updateSpeakerBar();
-  document.getElementById('speakerBar').style.display = 'flex';
-}
-
 function updateSpeakerBar() {
   const ccN = document.getElementById('ccName').value || 'CC';
   const clN = document.getElementById('clName').value || 'CL';
@@ -760,6 +750,17 @@ function downloadPdf() {
   document.getElementById('memoToggle').classList.add('open');
   window.onafterprint = () => { document.getElementById('print-table').style.display = 'none'; };
   setTimeout(() => { window.print(); }, 300);
+}
+
+// ─── Audio Download ───
+function downloadAudio() {
+  if (!audioBlob) { toast('録音データがありません'); return; }
+  const date = document.getElementById('sessionDate').value || 'recording';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(audioBlob);
+  a.download = '録音_' + date.replace(/-/g,'') + '.webm';
+  a.click();
+  toast('録音データをダウンロードしました');
 }
 
 // ─── Toast ───
