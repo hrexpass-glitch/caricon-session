@@ -207,6 +207,13 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     <div class="timer-lbl" id="timerLbl">15分カウントダウン</div>
 
     <button class="btn btn-full btn-primary" id="startBtn" onclick="startBoth()" style="margin-bottom:8px;font-size:15px;padding:14px">▶ スタート</button>
+
+    <div class="speaker-bar" id="speakerBar" style="margin-bottom:8px">
+      <div class="speaker-label">現在の発言者</div>
+      <div class="speaker-name cc" id="speakerName">CC</div>
+      <button class="switch-btn to-cl" id="switchBtn" onclick="switchSpeaker()">CLに切替</button>
+    </div>
+
     <div class="btn-row" style="margin-bottom:0">
       <button class="btn btn-stop" id="stopAllBtn" onclick="stopAll()">■ 停止</button>
       <button class="btn" onclick="resetTimerFull()">↺ リセット</button>
@@ -217,11 +224,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
       <span id="statusTxt">タイマーまたは録音を開始してください</span>
     </div>
 
-    <div class="speaker-bar" id="speakerBar">
-      <div class="speaker-label">現在の発言者</div>
-      <div class="speaker-name cc" id="speakerName">CC</div>
-      <button class="switch-btn to-cl" id="switchBtn" onclick="switchSpeaker()">CLに切替</button>
-    </div>
+
 
     <div class="live-text" id="liveText"></div>
 
@@ -612,13 +615,18 @@ async function toggleRec() {
 
 async function startBoth() {
   if (isTimerRunning || isRecording) return;
+  currentSpeaker = 'CC';
+  updateSpeakerBar();
   const ok = await startRec();
-  if (!ok) return;
   startCountdown();
   document.getElementById('startBtn').disabled = true;
-  document.getElementById('startBtn').textContent = '録音中…';
-  setStatus('rec','録音中 + タイマー動作中');
-  updateSpeakerBar();
+  if (ok) {
+    document.getElementById('startBtn').textContent = '⏱🎤 動作中…';
+    setStatus('rec','録音中 + タイマー動作中');
+  } else {
+    document.getElementById('startBtn').textContent = '⏱ タイマー動作中…';
+    setStatus('timer','タイマー動作中（マイク未使用）');
+  }
 }
 
 function stopAll() {
