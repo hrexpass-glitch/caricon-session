@@ -6,7 +6,7 @@
 <title>面談記録メーカー</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
-:root {
+:root{
   --bg:#f7f7f5;--surface:#fff;--surface2:#f2f2f0;
   --border:#e8e8e4;--border2:#d4d4cc;
   --text:#1a1a18;--muted:#6b6b64;--dim:#aaa9a0;
@@ -29,13 +29,15 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .sec-lbl{font-size:9px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase;margin-bottom:12px;font-weight:600}
 .field{margin-bottom:10px}
 .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:500}
-.field input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'Noto Sans JP',sans-serif;font-size:14px;color:var(--text);outline:none}
-.field input:focus{border-color:var(--ac-bd)}
+.field input,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'Noto Sans JP',sans-serif;font-size:14px;color:var(--text);outline:none}
+.field input:focus,.field textarea:focus{border-color:var(--ac-bd)}
+.field textarea{resize:vertical;min-height:60px;line-height:1.7}
 .btn{padding:11px 14px;border-radius:var(--r);border:1px solid var(--border2);background:var(--surface);color:var(--muted);font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s}
 .btn:active{opacity:.65}
 .btn:disabled{opacity:.3;cursor:not-allowed}
 .btn-primary{background:var(--ac);border-color:var(--ac);color:#fff}
 .btn-danger{background:var(--red-bg);border-color:var(--red-bd);color:var(--red)}
+.btn-stop{background:#fff0f0;border-color:var(--red-bd);color:var(--red);font-weight:700}
 .btn-full{width:100%}
 .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .timer-num{text-align:center;font-size:52px;font-variant-numeric:tabular-nums;letter-spacing:2px;color:var(--dim);padding:6px 0;font-family:'Noto Serif JP',serif;transition:color .3s}
@@ -68,15 +70,17 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .action-btn{width:100%;padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:'Noto Sans JP',sans-serif;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;margin-bottom:7px;transition:background .15s;box-shadow:var(--sh)}
 .action-btn:active{background:var(--surface2)}
 .action-btn:disabled{opacity:.3;cursor:not-allowed}
-.session-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:var(--sh);cursor:pointer}
+.session-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin:10px 12px;box-shadow:var(--sh);cursor:pointer;transition:background .15s}
 .session-item:active{background:var(--surface2)}
-.session-item-left{flex:1;min-width:0}
-.session-date{font-size:12px;color:var(--muted);margin-bottom:3px}
-.session-names{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.session-count{font-size:11px;color:var(--dim);margin-top:2px}
-.session-arrow{color:var(--dim);font-size:18px;flex-shrink:0}
-.session-del{background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:4px;flex-shrink:0}
-.session-del:active{color:var(--red)}
+.session-item.bookmarked{border-color:var(--ac-bd);background:var(--ac-lt)}
+.session-item-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.session-title{font-size:14px;font-weight:700;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.session-bookmark{background:none;border:none;font-size:18px;cursor:pointer;padding:2px 4px;flex-shrink:0;line-height:1}
+.session-del{background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;padding:2px 6px;flex-shrink:0}
+.session-meta{font-size:11px;color:var(--muted);margin-bottom:3px}
+.session-note{font-size:11px;color:var(--dim);margin-top:4px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.session-count{font-size:11px;color:var(--dim)}
+.session-arrow{color:var(--dim);font-size:18px}
 .empty-state{text-align:center;padding:60px 20px;color:var(--dim)}
 .empty-icon{font-size:36px;margin-bottom:12px;opacity:.35}
 .empty-text{font-size:13px;line-height:1.9}
@@ -109,7 +113,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .memo-body.open{display:block}
 .memo-ta{width:100%;min-height:90px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 13px;font-family:'Noto Sans JP',sans-serif;font-size:13px;color:var(--text);resize:vertical;outline:none;line-height:1.75}
 .memo-ta:focus{border-color:var(--ac-bd)}
-.corr-bar{background:var(--ac-lt);border:1px solid var(--ac-bd);border-radius:var(--r);padding:12px 14px;margin:0 12px 0;display:none;gap:10px;align-items:center;flex-wrap:wrap}
+.corr-bar{background:var(--ac-lt);border:1px solid var(--ac-bd);border-radius:var(--r);padding:12px 14px;margin:0 12px;display:none;gap:10px;align-items:center;flex-wrap:wrap}
 .corr-bar.show{display:flex}
 .corr-txt{font-size:12px;color:var(--ac);flex:1;min-width:180px}
 select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-radius:6px;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 10px;outline:none;flex:1;min-width:120px}
@@ -122,11 +126,15 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 .modal-box{background:var(--surface);border-radius:16px;padding:28px;width:100%;max-width:340px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,.1)}
 .modal-big{font-size:56px;text-align:center;color:var(--ac);font-family:'Noto Serif JP',serif;margin-bottom:8px}
 .modal-msg{font-size:14px;text-align:center;color:var(--muted);letter-spacing:.08em;margin-bottom:20px}
+.audio-player{margin-top:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;display:none}
+.audio-player.show{display:block}
+.audio-player audio{width:100%;margin-top:4px}
+.audio-label{font-size:11px;color:var(--muted);margin-bottom:4px}
 
 @media print {
   .hdr-back,.hdr-btn,.fab,#card-timer,#card-actions,
   .corr-bar,.add-row-btn,.speaker-bar,.live-text,.status,
-  .del-btn,.count-badge,#card-transcript{display:none!important;}
+  .del-btn,.count-badge,#card-transcript,.audio-player{display:none!important;}
   body{font-size:11px!important;background:#fff!important;}
   .page{display:block!important;padding:0!important;}
   #page-list{display:none!important;}
@@ -171,37 +179,61 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 
   <div class="card" id="card-info">
     <div class="sec-lbl">セッション情報</div>
+    <div class="field"><label>面談タイトル</label><input type="text" id="sessionTitle" placeholder="例：2026-03-15の面談"></div>
     <div class="field"><label>実施日</label><input type="date" id="sessionDate"></div>
     <div class="field"><label>CC（キャリアコンサルタント）</label><input type="text" id="ccName" placeholder="氏名を入力"></div>
     <div class="field"><label>CL（クライアント）</label><input type="text" id="clName" placeholder="氏名 or イニシャル"></div>
+    <div class="field"><label>メモ（一覧に表示）</label><textarea id="sessionNote" placeholder="この面談についての簡単なメモ…"></textarea></div>
   </div>
 
   <div class="card" id="card-timer">
     <div class="sec-lbl">タイマー &amp; 録音</div>
+
     <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button class="btn" style="flex:1;font-weight:700;font-size:14px" onclick="setTimer(15)">⏱ 15分<br><span style="font-size:9px;font-weight:400;opacity:.7">国キャリ</span></button>
-      <button class="btn" style="flex:1;font-weight:700;font-size:14px" onclick="setTimer(30)">⏱ 30分<br><span style="font-size:9px;font-weight:400;opacity:.7">1級・2級</span></button>
+      <button class="btn" style="flex:1;font-weight:700;font-size:14px;line-height:1.4" onclick="setTimer(15)">⏱ 15分<br><span style="font-size:9px;font-weight:400;opacity:.7">国キャリ</span></button>
+      <button class="btn" style="flex:1;font-weight:700;font-size:14px;line-height:1.4" onclick="setTimer(30)">⏱ 30分<br><span style="font-size:9px;font-weight:400;opacity:.7">1級・2級</span></button>
     </div>
-    <div class="field" style="margin-bottom:10px"><label>タイマー時間（分）</label><div style="display:flex;align-items:center;gap:10px"><input type="range" id="timerRange" min="1" max="60" value="15" oninput="onRangeChange(this.value)" style="flex:1;accent-color:var(--ac)"><span id="timerRangeVal" style="font-size:16px;font-weight:700;color:var(--ac);min-width:40px;text-align:right">15分</span></div></div>
+
+    <div class="field" style="margin-bottom:10px">
+      <label>カスタム時間（分）</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="range" id="timerRange" min="1" max="60" value="15" oninput="onRangeChange(this.value)" style="flex:1;accent-color:var(--ac)">
+        <span id="timerRangeVal" style="font-size:16px;font-weight:700;color:var(--ac);min-width:40px;text-align:right">15分</span>
+      </div>
+    </div>
+
     <div class="timer-num" id="timerDisplay">15:00</div>
     <div class="timer-bar-bg"><div class="timer-bar" id="timerBar" style="width:100%"></div></div>
     <div class="timer-lbl" id="timerLbl">15分カウントダウン</div>
+
     <div class="btn-row">
       <button class="btn" id="timerBtn" onclick="toggleTimer()">⏱ タイマー</button>
       <button class="btn" id="recBtn" onclick="toggleRec()">🎤 録音</button>
     </div>
     <button class="btn btn-full" id="bothBtn" onclick="startBoth()" style="margin-bottom:8px;background:var(--cc-bg);border-color:var(--ac-bd);color:var(--ac);font-weight:700">⏱🎤 同時スタート</button>
-    <button class="btn btn-full btn-danger" onclick="resetTimer()" style="margin-bottom:0">↺ タイマーリセット</button>
+    <div class="btn-row" style="margin-bottom:0">
+      <button class="btn btn-stop btn-full" id="stopAllBtn" onclick="stopAll()">■ 停止</button>
+      <button class="btn" onclick="resetTimerFull()">↺ リセット</button>
+    </div>
+
     <div class="status" id="statusBar">
       <span class="status-dot"></span>
       <span id="statusTxt">タイマーまたは録音を開始してください</span>
     </div>
+
     <div class="speaker-bar" id="speakerBar" style="display:none">
       <div class="speaker-label">現在の発言者</div>
       <div class="speaker-name cc" id="speakerName">CC</div>
       <button class="switch-btn to-cl" id="switchBtn" onclick="switchSpeaker()">CLに切替</button>
     </div>
+
     <div class="live-text" id="liveText"></div>
+
+    <!-- 録音再生 -->
+    <div class="audio-player" id="audioPlayer">
+      <div class="audio-label">🎧 録音データ</div>
+      <audio id="audioEl" controls></audio>
+    </div>
   </div>
 
   <div class="card" id="card-actions">
@@ -233,7 +265,18 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     </div>
   </div>
 
-  <!-- 印刷用テーブル -->
+  <div class="card" id="card-memo">
+    <div class="memo-hdr" onclick="toggleMemo()">
+      <span class="memo-hdr-txt">📝 総合メモ・フィードバック</span>
+      <span class="memo-toggle" id="memoToggle">▼</span>
+    </div>
+    <div class="memo-body" id="memoBody">
+      <textarea class="memo-ta" id="memoText" placeholder="全体を通じての気づき、改善点、良かった点などを記録…"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- 印刷用テーブル -->
 <div id="print-table" style="display:none;padding:0 12px">
   <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:8px">
     <thead>
@@ -249,22 +292,11 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
   </table>
 </div>
 
-<div class="card" id="card-memo">
-    <div class="memo-hdr" onclick="toggleMemo()">
-      <span class="memo-hdr-txt">📝 総合メモ・フィードバック</span>
-      <span class="memo-toggle" id="memoToggle">▼</span>
-    </div>
-    <div class="memo-body" id="memoBody">
-      <textarea class="memo-ta" id="memoText" placeholder="全体を通じての気づき、改善点、良かった点などを記録…"></textarea>
-    </div>
-  </div>
-</div>
-
 <!-- Timer end modal -->
 <div class="modal-ov" id="timerModal">
   <div class="modal-box">
     <div class="modal-big">⏰</div>
-    <div class="modal-msg">15分が経過しました</div>
+    <div class="modal-msg">時間が経過しました</div>
     <button class="btn btn-primary btn-full" onclick="dismissModal()">閉じる</button>
   </div>
 </div>
@@ -272,7 +304,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 <div class="toast" id="toast"></div>
 
 <script>
-const STORAGE_KEY = 'caricon_sessions_v2';
+const STORAGE_KEY = 'caricon_sessions_v3';
 function loadSessions() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; } }
 function saveSessions(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
 
@@ -286,41 +318,63 @@ let isTimerRunning = false;
 let timerInterval = null;
 let isRecording = false;
 let mediaRecorder = null;
+let audioChunks = [];
+let audioBlob = null;
 let speechRecognition = null;
 let currentSpeaker = 'CC';
 
 document.getElementById('sessionDate').value = new Date().toISOString().split('T')[0];
 renderSessionList();
 
+// ─── Session List ───
 function renderSessionList() {
   const wrap = document.getElementById('session-list-wrap');
   if (sessions.length === 0) {
     wrap.innerHTML = '<div class="empty-state" style="padding-top:80px"><div class="empty-icon">📋</div><div class="empty-text">面談記録がまだありません<br>「＋ 新しい面談」から始めましょう</div></div>';
     return;
   }
-  wrap.innerHTML = sessions.slice().reverse().map(s => `
-    <div class="session-item" onclick="openSession('${s.id}')">
-      <div class="session-item-left">
-        <div class="session-date">${s.date || '日付未設定'}</div>
-        <div class="session-names">CC: ${s.ccName || '未設定'} ／ CL: ${s.clName || '未設定'}</div>
-        <div class="session-count">${s.entries ? s.entries.length : 0} 件の発言</div>
+  const sorted = [...sessions].sort((a,b) => {
+    if (a.bookmarked && !b.bookmarked) return -1;
+    if (!a.bookmarked && b.bookmarked) return 1;
+    return (b.savedAt||0) - (a.savedAt||0);
+  });
+  wrap.innerHTML = sorted.map(s => `
+    <div class="session-item${s.bookmarked?' bookmarked':''}" onclick="openSession('${s.id}')">
+      <div class="session-item-top">
+        <span class="session-title">${s.title || s.date+'の面談' || '無題の面談'}</span>
+        <button class="session-bookmark" onclick="event.stopPropagation();toggleBookmark('${s.id}')" title="ブックマーク">${s.bookmarked?'★':'☆'}</button>
+        <button class="session-del" onclick="event.stopPropagation();deleteSession('${s.id}')">🗑</button>
       </div>
-      <button class="session-del" onclick="event.stopPropagation();deleteSession('${s.id}')">🗑</button>
-      <span class="session-arrow">›</span>
+      <div class="session-meta">📅 ${s.date||'日付未設定'} ／ CC: ${s.ccName||'未設定'} ／ CL: ${s.clName||'未設定'}</div>
+      <div class="session-count">${s.entries?s.entries.length:0} 件の発言</div>
+      ${s.note ? `<div class="session-note">📝 ${s.note}</div>` : ''}
     </div>
   `).join('');
 }
 
+function toggleBookmark(id) {
+  const s = sessions.find(x => x.id === id);
+  if (!s) return;
+  s.bookmarked = !s.bookmarked;
+  saveSessions(sessions);
+  renderSessionList();
+  toast(s.bookmarked ? '★ ブックマークしました' : 'ブックマークを解除しました');
+}
+
 function newSession() {
   currentSessionId = 'session_' + Date.now();
-  entries = []; nextId = 1;
+  entries = []; nextId = 1; audioBlob = null;
   resetTimerFull();
   stopRec();
-  document.getElementById('sessionDate').value = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('sessionDate').value = today;
+  document.getElementById('sessionTitle').value = today + 'の面談';
   document.getElementById('ccName').value = '';
   document.getElementById('clName').value = '';
+  document.getElementById('sessionNote').value = '';
   document.getElementById('memoText').value = '';
-  document.getElementById('session-hdr-title').textContent = '新しい面談';
+  document.getElementById('session-hdr-title').textContent = today + 'の面談';
+  document.getElementById('audioPlayer').classList.remove('show');
   renderEntries();
   showPage('page-session');
 }
@@ -329,15 +383,20 @@ function openSession(id) {
   const s = sessions.find(x => x.id === id);
   if (!s) return;
   currentSessionId = id;
-  entries = (s.entries || []).map(e => ({...e}));
-  nextId = entries.length > 0 ? Math.max(...entries.map(e => e.id)) + 1 : 1;
+  entries = (s.entries||[]).map(e=>({...e}));
+  nextId = entries.length > 0 ? Math.max(...entries.map(e=>e.id))+1 : 1;
+  audioBlob = null;
+  document.getElementById('sessionTitle').value = s.title || '';
   document.getElementById('sessionDate').value = s.date || '';
   document.getElementById('ccName').value = s.ccName || '';
   document.getElementById('clName').value = s.clName || '';
+  document.getElementById('sessionNote').value = s.note || '';
   document.getElementById('memoText').value = s.memo || '';
-  document.getElementById('session-hdr-title').textContent = s.date || '面談記録';
+  document.getElementById('session-hdr-title').textContent = s.title || s.date || '面談記録';
+  document.getElementById('audioPlayer').classList.remove('show');
   resetTimerFull();
   renderEntries();
+  if (entries.length > 0) enableBtns();
   showPage('page-session');
 }
 
@@ -350,14 +409,23 @@ function deleteSession(id) {
 }
 
 function saveSession() {
+  const title = document.getElementById('sessionTitle').value || document.getElementById('sessionDate').value + 'の面談';
   const date = document.getElementById('sessionDate').value;
   const ccName = document.getElementById('ccName').value;
   const clName = document.getElementById('clName').value;
+  const note = document.getElementById('sessionNote').value;
   const memo = document.getElementById('memoText').value;
-  const data = { id: currentSessionId, date, ccName, clName, memo, entries: entries.map(e => ({...e})), savedAt: Date.now() };
+  const existing = sessions.find(s => s.id === currentSessionId);
+  const data = {
+    id: currentSessionId, title, date, ccName, clName, note, memo,
+    entries: entries.map(e=>({...e})),
+    bookmarked: existing ? existing.bookmarked : false,
+    savedAt: Date.now()
+  };
   const idx = sessions.findIndex(s => s.id === currentSessionId);
   if (idx >= 0) sessions[idx] = data; else sessions.push(data);
   saveSessions(sessions);
+  document.getElementById('session-hdr-title').textContent = title;
   toast('保存しました ✓');
 }
 
@@ -373,8 +441,26 @@ function showPage(id) {
   window.scrollTo(0,0);
 }
 
-// Timer
-function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0')+':'+( s%60).toString().padStart(2,'0'); }
+// ─── Timer ───
+function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).toString().padStart(2,'0'); }
+
+function setTimer(min) {
+  if (isTimerRunning) return;
+  TIMER_DURATION = min * 60;
+  timerSecondsLeft = TIMER_DURATION;
+  document.getElementById('timerRange').value = min;
+  document.getElementById('timerRangeVal').textContent = min + '分';
+  updateTimerUI();
+  toast(min + '分にセットしました');
+}
+
+function onRangeChange(val) {
+  if (isTimerRunning) return;
+  TIMER_DURATION = parseInt(val) * 60;
+  timerSecondsLeft = TIMER_DURATION;
+  document.getElementById('timerRangeVal').textContent = val + '分';
+  updateTimerUI();
+}
 
 function updateTimerUI() {
   const d = document.getElementById('timerDisplay');
@@ -390,7 +476,7 @@ function updateTimerUI() {
     lbl.textContent = '残り ' + fmt(timerSecondsLeft);
   } else {
     d.className='timer-num'; bar.className='timer-bar';
-    lbl.textContent = timerSecondsLeft === TIMER_DURATION ? (TIMER_DURATION/60)+'分カウントダウン' : '一時停止中 — ' + fmt(timerSecondsLeft);
+    lbl.textContent = timerSecondsLeft === TIMER_DURATION ? (TIMER_DURATION/60)+'分カウントダウン' : '一時停止中 — '+fmt(timerSecondsLeft);
   }
 }
 
@@ -416,31 +502,10 @@ function startCountdown() {
     updateTimerUI();
     if (timerSecondsLeft <= 0) { clearInterval(timerInterval); isTimerRunning = false; onTimerEnd(); }
   }, 1000);
-  setStatus('timer','タイマー動作中 — ' + fmt(timerSecondsLeft));
+  setStatus('timer','タイマー動作中 — '+fmt(timerSecondsLeft));
   updateTimerUI();
 }
 
-function resetTimer() {
-  // 一時停止のみ（時間リセットなし）→ ↺ ボタンは完全リセット
-  resetTimerFull();
-}
-
-function setTimer(min) {
-  if (isTimerRunning) return;
-  TIMER_DURATION = min * 60;
-  timerSecondsLeft = TIMER_DURATION;
-  document.getElementById("timerRange").value = min;
-  document.getElementById("timerRangeVal").textContent = min + "分";
-  updateTimerUI();
-  toast(min + "分にセットしました");
-}
-function onRangeChange(val) {
-  if (isTimerRunning) return;
-  TIMER_DURATION = parseInt(val) * 60;
-  timerSecondsLeft = TIMER_DURATION;
-  document.getElementById("timerRangeVal").textContent = val + "分";
-  updateTimerUI();
-}
 function resetTimerFull() {
   clearInterval(timerInterval);
   isTimerRunning = false;
@@ -463,24 +528,32 @@ function dismissModal() { document.getElementById('timerModal').classList.remove
 
 function beep() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
     osc.frequency.value = 880;
     gain.gain.setValueAtTime(0.4, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.0);
-    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 1.0);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+1.0);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime+1.0);
   } catch(e) {}
 }
 
-// Recording
+// ─── Recording ───
 async function startRec() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioChunks = [];
     mediaRecorder = new MediaRecorder(stream);
-    mediaRecorder.ondataavailable = e => {};
-    mediaRecorder.onstop = () => stream.getTracks().forEach(t => t.stop());
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      const url = URL.createObjectURL(audioBlob);
+      const audioEl = document.getElementById('audioEl');
+      audioEl.src = url;
+      document.getElementById('audioPlayer').classList.add('show');
+    };
     mediaRecorder.start(1000);
     isRecording = true;
     startSpeechRecognition();
@@ -530,15 +603,17 @@ async function startBoth() {
 }
 
 function stopAll() {
-  stopRec();
+  if (isRecording) stopRec();
   if (isTimerRunning) { clearInterval(timerInterval); isTimerRunning = false; }
   document.getElementById('recBtn').textContent = '🎤 録音';
   document.getElementById('recBtn').className = 'btn';
   document.getElementById('timerBtn').textContent = '⏱ タイマー';
   document.getElementById('bothBtn').disabled = false;
+  updateTimerUI();
+  setStatus('done','停止しました');
 }
 
-// Speaker
+// ─── Speaker ───
 function showSpeakerBar() {
   currentSpeaker = 'CC';
   updateSpeakerBar();
@@ -566,7 +641,7 @@ function switchSpeaker() {
   toast(currentSpeaker + ' に切り替えました');
 }
 
-// Speech
+// ─── Speech ───
 function startSpeechRecognition() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return;
@@ -591,7 +666,7 @@ function startSpeechRecognition() {
       clearTimeout(silenceTimer);
       silenceTimer = setTimeout(() => {
         if (finalBuffer.trim()) {
-          entries.push({ id: nextId++, label: currentSpeaker, text: finalBuffer.trim(), notes: '', advice: '' });
+          entries.push({ id:nextId++, label:currentSpeaker, text:finalBuffer.trim(), notes:'', advice:'' });
           renderEntries(); enableBtns();
           finalBuffer = ''; liveEl.textContent = '';
         }
@@ -603,7 +678,7 @@ function startSpeechRecognition() {
   try { speechRecognition.start(); } catch(e) {}
 }
 
-// Entries
+// ─── Entries ───
 function renderEntries() {
   const empty = document.getElementById('emptyState');
   const wrap = document.getElementById('tableWrap');
@@ -638,7 +713,7 @@ function updateField(id,field,val) { const e=entries.find(e=>e.id===id); if(e) e
 function delEntry(id) { if(!confirm('この行を削除しますか？')) return; entries=entries.filter(e=>e.id!==id); renderEntries(); }
 function enableBtns() { document.getElementById('pdfBtn').disabled=false; document.getElementById('correctBtn').disabled=false; }
 
-// Correction
+// ─── Correction ───
 function showCorrection() { document.getElementById('corrBar').classList.add('show'); }
 function hideCorrection() { document.getElementById('corrBar').classList.remove('show'); }
 function applyCorrection() {
@@ -648,46 +723,43 @@ function applyCorrection() {
   renderEntries(); hideCorrection(); toast((from+1)+'番目以降のラベルを入れ替えました ✓');
 }
 
-// Memo
+// ─── Memo ───
 function toggleMemo() {
   document.getElementById('memoBody').classList.toggle('open');
   document.getElementById('memoToggle').classList.toggle('open');
 }
 
-// Status
+// ─── Status ───
 function setStatus(type,text) {
   document.getElementById('statusBar').className='status'+(type?' '+type:'');
   document.getElementById('statusTxt').textContent=text;
 }
 
-// PDF
+// ─── PDF ───
 function downloadPdf() {
   const ccN = document.getElementById('ccName').value || 'CC';
   const clN = document.getElementById('clName').value || 'CL';
+  const title = document.getElementById('sessionTitle').value || '';
   const tbody = document.getElementById('pt-body');
   tbody.innerHTML = entries.map((e,i) => {
     const lc = e.label==='CC' ? '#2d7a5e' : '#5a4a8e';
     const name = e.label==='CC' ? ccN : clN;
     return '<tr style="page-break-inside:avoid">'
-      + '<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;color:#888;font-size:10px">' + String(i+1).padStart(2,'0') + '</td>'
+      + '<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;color:#888;font-size:10px">'+String(i+1).padStart(2,'0')+'</td>'
       + '<td style="border:1px solid #ccc;padding:4px 5px;text-align:center"><span style="display:inline-block;background:'+lc+';color:#fff;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:3px">'+e.label+'</span><br><span style="font-size:9px;color:#666">'+name+'</span></td>'
-      + '<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6">' + (e.text||'').replace(/</g,'&lt;') + '</td>'
-      + '<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#444">' + (e.notes||'').replace(/</g,'&lt;') + '</td>'
-      + '<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#8a5510">' + (e.advice||'').replace(/</g,'&lt;') + '</td>'
+      + '<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6">'+(e.text||'').replace(/</g,'&lt;')+'</td>'
+      + '<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#444">'+(e.notes||'').replace(/</g,'&lt;')+'</td>'
+      + '<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#8a5510">'+(e.advice||'').replace(/</g,'&lt;')+'</td>'
       + '</tr>';
   }).join('');
   document.getElementById('print-table').style.display = 'block';
   document.getElementById('memoBody').classList.add('open');
   document.getElementById('memoToggle').classList.add('open');
-  setTimeout(() => {
-    window.print();
-    document.getElementById('print-table').style.display = 'none';
-  }, 300);
-  window.onafterprint = () => {
-    document.getElementById('print-table').style.display = 'none';
-  };
+  window.onafterprint = () => { document.getElementById('print-table').style.display = 'none'; };
+  setTimeout(() => { window.print(); }, 300);
 }
 
+// ─── Toast ───
 function toast(msg) {
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
