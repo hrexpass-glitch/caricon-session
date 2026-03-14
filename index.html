@@ -681,8 +681,11 @@ function downloadPdf() {
   document.getElementById('memoToggle').classList.add('open');
   setTimeout(() => {
     window.print();
-    setTimeout(() => { document.getElementById('print-table').style.display = 'none'; }, 500);
+    document.getElementById('print-table').style.display = 'none';
   }, 300);
+  window.onafterprint = () => {
+    document.getElementById('print-table').style.display = 'none';
+  };
 }
 
 function toast(msg) {
