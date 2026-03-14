@@ -302,6 +302,24 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 
 <script>
 const STORAGE_KEY = 'caricon_sessions_v3';
+
+// 旧バージョンからのデータ移行
+(function migrate() {
+  try {
+    const oldKeys = ['caricon_sessions_v2', 'caricon_sessions_v1', 'caricon_sessions'];
+    oldKeys.forEach(key => {
+      const old = localStorage.getItem(key);
+      if (!old) return;
+      const oldData = JSON.parse(old);
+      if (!oldData || oldData.length === 0) return;
+      const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      const currentIds = current.map(s => s.id);
+      const merged = [...current, ...oldData.filter(s => !currentIds.includes(s.id))];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      localStorage.removeItem(key);
+    });
+  } catch(e) {}
+})();
 function loadSessions() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; } }
 function saveSessions(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
 
