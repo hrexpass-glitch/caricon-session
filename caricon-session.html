@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>面談記録メーカー｜キャリコン ロープレ</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface2: #f2f2f0;
+  --border: #e8e8e4;
+  --border2: #d4d4cc;
+  --text: #1a1a18;
+  --text-muted: #6b6b64;
+  --text-dim: #aaa9a0;
+  --cc: #2d7a5e;
+  --cc-bg: #edf7f3;
+  --cc-border: #a8d8c5;
+  --cl: #5a4a8e;
+  --cl-bg: #f3f0fa;
+  --cl-border: #c4b8e8;
+  --accent: #c9892a;
+  --accent-light: #fdf3e3;
+  --accent-border: #e8c07d;
+  --red: #b84a4a;
+  --red-bg: #fdf1f1;
+  --red-border: #e8a0a0;
+  --green: #2d7a5e;
+  --radius: 8px;
+  --shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans JP', sans-serif;
+  min-height: 100vh;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+.app {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  min-height: 100vh;
+}
+
+/* ─── Sidebar ─── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-sm);
+}
+
+.logo { display: flex; flex-direction: column; gap: 3px; }
+.logo-sub {
+  font-size: 9px;
+  letter-spacing: 0.35em;
+  color: var(--accent);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.logo-title {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+.divider { height: 1px; background: var(--border); }
+.section-label {
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.meta-field { margin-bottom: 10px; }
+.meta-field label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+.meta-field input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.meta-field input:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px rgba(201,137,42,0.1);
+  background: var(--surface);
+}
+.meta-field input::placeholder { color: var(--text-dim); }
+
+/* ─── Timer ─── */
+.timer-section { display: flex; flex-direction: column; gap: 8px; }
+
+.timer-display {
+  text-align: center;
+  font-size: 34px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  font-family: 'Noto Serif JP', serif;
+  padding: 6px 0;
+  transition: color 0.3s;
+}
+.timer-display.active { color: var(--accent); }
+.timer-display.warning { color: var(--red); animation: timerPulse 1s infinite; }
+@keyframes timerPulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
+
+.timer-progress-wrap {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.timer-progress-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 1s linear, background 0.3s;
+  width: 100%;
+}
+.timer-progress-bar.warning { background: var(--red); }
+
+.timer-label {
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+
+/* ─── Control Buttons ─── */
+.btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.btn-grid-full { grid-column: 1 / -1; }
+
+.ctrl-btn {
+  padding: 10px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.18s;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+}
+.ctrl-btn:hover:not(:disabled) {
+  background: var(--surface2);
+  border-color: var(--border2);
+  color: var(--text);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+}
+.ctrl-btn:active:not(:disabled) { transform: translateY(0); }
+.ctrl-btn:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+
+.ctrl-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+.ctrl-btn.primary:hover:not(:disabled) { background: #b87b24; }
+
+.ctrl-btn.danger {
+  background: var(--red-bg);
+  border-color: var(--red-border);
+  color: var(--red);
+}
+.ctrl-btn.danger:hover:not(:disabled) { background: #fae8e8; }
+
+.ctrl-btn.both {
+  background: linear-gradient(135deg, var(--cc-bg), var(--accent-light));
+  border-color: var(--accent-border);
+  color: var(--accent);
+  font-weight: 700;
+}
+.ctrl-btn.both:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ddf0ea, #fce8c8);
+}
+
+.rec-indicator {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 7px 11px;
+  background: var(--surface2);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.rec-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--border2);
+  flex-shrink: 0;
+}
+.rec-indicator.recording-active .rec-dot {
+  background: var(--red);
+  animation: pulse 1s infinite;
+}
+.rec-indicator.timer-active .rec-dot { background: var(--accent); animation: pulse 1s infinite; }
+.rec-indicator.both-active .rec-dot { background: var(--cc); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.35;transform:scale(0.75)} }
+
+/* ─── Live transcript preview ─── */
+.live-text {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--accent-light);
+  border: 1px solid var(--accent-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  min-height: 38px;
+  line-height: 1.65;
+  font-style: italic;
+  display: none;
+}
+.live-text.show { display: block; }
+
+/* ─── Action buttons ─── */
+.action-group { display: flex; flex-direction: column; gap: 6px; margin-top: auto; }
+.action-btn {
+  width: 100%; padding: 9px 12px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-muted); font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px; cursor: pointer; transition: all 0.18s;
+  display: flex; align-items: center; gap: 8px; letter-spacing: 0.02em;
+  box-shadow: var(--shadow-sm);
+}
+.action-btn:hover:not(:disabled) {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--border2);
+  transform: translateY(-1px);
+}
+.action-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* ─── Main ─── */
+.main {
+  padding: 32px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.status-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 12px; color: var(--text-muted);
+  box-shadow: var(--shadow-sm);
+}
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border2); flex-shrink: 0; }
+.status-bar.recording-active .status-dot { background: var(--red); animation: pulse 1s infinite; }
+.status-bar.done .status-dot { background: var(--cc); }
+.status-bar.timer-active .status-dot { background: var(--accent); animation: pulse 1s infinite; }
+
+/* correction banner */
+.correction-banner {
+  background: var(--accent-light);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius); padding: 13px 16px; display: none;
+  gap: 12px; align-items: center; flex-wrap: wrap;
+}
+.correction-banner.show { display: flex; }
+.correction-banner-text { font-size: 12px; color: var(--accent); flex: 1; min-width: 200px; }
+.correction-banner-text strong { font-weight: 700; }
+.correction-select {
+  background: var(--surface); border: 1px solid var(--accent-border);
+  border-radius: 6px; color: var(--text); font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px; padding: 6px 10px; outline: none; cursor: pointer;
+}
+.correction-apply {
+  padding: 7px 16px; border-radius: 6px; border: 1px solid var(--accent);
+  background: var(--accent); color: #fff; font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px; cursor: pointer; transition: all 0.2s; font-weight: 500;
+}
+.correction-apply:hover { background: #b87b24; }
+.correction-close {
+  background: transparent; border: none; color: var(--text-dim);
+  cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px;
+  transition: background 0.15s;
+}
+.correction-close:hover { background: var(--border); }
+
+/* ─── Table ─── */
+.transcript-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+}
+.transcript-title {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.entry-counter {
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--surface2);
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+.transcript-empty {
+  text-align: center; padding: 80px 20px; color: var(--text-dim);
+}
+.transcript-empty-icon { font-size: 36px; margin-bottom: 14px; opacity: 0.35; }
+.transcript-empty-text { font-size: 13px; line-height: 1.9; }
+
+.record-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.record-table th {
+  background: var(--surface2);
+  border-bottom: 2px solid var(--border2);
+  border-right: 1px solid var(--border);
+  padding: 9px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-align: center;
+  white-space: nowrap;
+}
+.record-table th:last-child { border-right: none; }
+.record-table td {
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 10px 12px;
+  vertical-align: top;
+  background: var(--surface);
+  transition: background 0.12s;
+}
+.record-table td:last-child { border-right: none; }
+.record-table tr:last-child td { border-bottom: none; }
+.record-table tr:nth-child(even) td { background: #fafaf8; }
+.record-table tr:hover td { background: #f5f5f0 !important; }
+
+.col-no { width: 44px; text-align: center; color: var(--text-dim); font-size: 11px; font-weight: 600; }
+.col-transcript { min-width: 220px; }
+.col-notes { min-width: 160px; }
+.col-advice { min-width: 120px; }
+.col-del { width: 36px; text-align: center; }
+
+.cell-editable {
+  width: 100%;
+  min-height: 52px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 13px;
+  line-height: 1.78;
+  resize: none;
+  outline: none;
+  cursor: text;
+  display: block;
+  padding: 0;
+}
+.cell-editable:focus {
+  background: rgba(201,137,42,0.04);
+  border-radius: 4px;
+  padding: 3px 5px;
+  margin: -3px -5px;
+}
+.cell-editable::placeholder { color: var(--text-dim); }
+
+.transcript-cell-wrap { display: flex; flex-direction: column; gap: 6px; }
+
+.label-btn {
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px;
+  border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  cursor: pointer; border: 1px solid; transition: all 0.15s;
+  white-space: nowrap; width: fit-content;
+}
+.label-btn.CC {
+  background: var(--cc-bg);
+  border-color: var(--cc-border);
+  color: var(--cc);
+}
+.label-btn.CC:hover { background: #d6eee5; }
+.label-btn.CL {
+  background: var(--cl-bg);
+  border-color: var(--cl-border);
+  color: var(--cl);
+}
+.label-btn.CL:hover { background: #e6dff5; }
+
+.del-btn {
+  background: transparent; border: none; color: var(--text-dim);
+  cursor: pointer; font-size: 14px; padding: 4px; border-radius: 4px;
+  transition: all 0.15s; line-height: 1;
+}
+.del-btn:hover { background: var(--red-bg); color: var(--red); }
+
+.add-row-btn {
+  margin-top: 10px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px dashed var(--border2);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.add-row-btn:hover {
+  border-color: var(--accent-border);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+/* memo section */
+.memo-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.memo-header {
+  padding: 12px 18px; display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s;
+}
+.memo-header:hover { background: var(--surface2); }
+.memo-header-left {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; font-weight: 500; letter-spacing: 0.03em;
+}
+.memo-toggle { color: var(--text-dim); font-size: 11px; transition: transform 0.2s; }
+.memo-toggle.open { transform: rotate(180deg); }
+.memo-body { padding: 14px 16px; display: none; }
+.memo-body.open { display: block; }
+.memo-textarea {
+  width: 100%; min-height: 90px;
+  background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 6px; padding: 11px 13px;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 13px; color: var(--text);
+  resize: vertical; outline: none; line-height: 1.75; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.memo-textarea:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px rgba(201,137,42,0.1);
+  background: var(--surface);
+}
+.memo-textarea::placeholder { color: var(--text-dim); }
+
+/* loading */
+.loading-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(247,247,245,0.88);
+  backdrop-filter: blur(4px); z-index: 100; flex-direction: column;
+  align-items: center; justify-content: center; gap: 18px;
+}
+.loading-overlay.show { display: flex; }
+.loading-spinner {
+  width: 38px; height: 38px;
+  border: 2.5px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 13px; color: var(--text-muted); letter-spacing: 0.1em; }
+
+/* toast */
+.toast {
+  position: fixed; bottom: 28px; right: 28px;
+  background: var(--text);
+  border-radius: var(--radius); padding: 11px 18px;
+  font-size: 13px; color: #fff; z-index: 200; opacity: 0;
+  transform: translateY(8px); transition: all 0.28s; pointer-events: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.toast.show { opacity: 1; transform: none; }
+
+/* countdown modal */
+.countdown-modal {
+  display: none; position: fixed; inset: 0;
+  background: rgba(247,247,245,0.93);
+  backdrop-filter: blur(8px); z-index: 150; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px;
+}
+.countdown-modal.show { display: flex; }
+.countdown-big {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 68px;
+  color: var(--accent);
+  line-height: 1;
+}
+.countdown-msg { font-size: 16px; color: var(--text-muted); letter-spacing: 0.1em; }
+
+@media (max-width: 800px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; }
+  .main { padding: 20px 16px; }
+  .record-table th, .record-table td { padding: 7px 8px; font-size: 12px; }
+  .col-notes, .col-advice { min-width: 90px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ─── Sidebar ─── -->
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="logo-sub">Career Counseling</span>
+      <span class="logo-title">面談記録メーカー</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="section-label">セッション情報</div>
+      <div class="meta-field">
+        <label>実施日</label>
+        <input type="date" id="sessionDate">
+      </div>
+      <div class="meta-field">
+        <label>CC（キャリアコンサルタント）</label>
+        <input type="text" id="ccName" placeholder="氏名を入力">
+      </div>
+      <div class="meta-field">
+        <label>CL（クライアント）</label>
+        <input type="text" id="clName" placeholder="氏名 or イニシャル">
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="section-label">タイマー &amp; 録音</div>
+
+      <div class="timer-section">
+        <div class="timer-display" id="timerDisplay">15:00</div>
+        <div class="timer-progress-wrap">
+          <div class="timer-progress-bar" id="timerBar"></div>
+        </div>
+        <div class="timer-label" id="timerLabel">15分カウントダウン</div>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <!-- 操作ボタン -->
+      <div class="btn-grid">
+        <button class="ctrl-btn" id="timerOnlyBtn" onclick="startTimerOnly()">⏱ タイマー</button>
+        <button class="ctrl-btn" id="recOnlyBtn" onclick="toggleRecOnly()">🎤 録音</button>
+        <button class="ctrl-btn both btn-grid-full" id="bothBtn" onclick="startBoth()">⏱🎤 同時スタート</button>
+        <button class="ctrl-btn danger btn-grid-full" id="stopBtn" onclick="stopAll()" disabled>■ 停止</button>
+      </div>
+
+      <div style="height:10px"></div>
+      <div class="rec-indicator" id="recIndicator">
+        <span class="rec-dot"></span>
+        <span id="recIndicatorText">待機中</span>
+      </div>
+
+      <div style="height:8px"></div>
+      <div class="live-text" id="liveText"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="action-group">
+      <button class="action-btn" id="correctBtn" onclick="showCorrection()" disabled>
+        ⇄ ラベルずれを一括訂正
+      </button>
+      <button class="action-btn" onclick="addRow()">
+        ＋ 行を手動追加
+      </button>
+      <button class="action-btn" id="pdfBtn" onclick="downloadPdf()" disabled>
+        ↓ PDF出力（面談記録）
+      </button>
+      <button class="action-btn" id="txtBtn" onclick="downloadTxt()" disabled>
+        ↓ テキストDL (.txt)
+      </button>
+    </div>
+  </aside>
+
+  <!-- ─── Main ─── -->
+  <main class="main">
+
+    <div class="status-bar" id="statusBar">
+      <span class="status-dot"></span>
+      <span id="statusText">タイマーまたは録音を開始してください</span>
+    </div>
+
+    <!-- correction banner -->
+    <div class="correction-banner" id="correctionBanner">
+      <div class="correction-banner-text">
+        <strong>ラベル一括訂正：</strong> 何番目以降のCC↔CLが入れ替わっていますか？
+      </div>
+      <select class="correction-select" id="correctionFrom">
+        <option value="">番号を選択</option>
+      </select>
+      <button class="correction-apply" onclick="applyCorrection()">訂正する</button>
+      <button class="correction-close" onclick="hideCorrection()">✕</button>
+    </div>
+
+    <!-- Transcript Table -->
+    <div>
+      <div class="transcript-header">
+        <span class="transcript-title">逐語録</span>
+        <span class="entry-counter" id="entryCounter">—</span>
+      </div>
+
+      <div id="emptyState" class="transcript-empty">
+        <div class="transcript-empty-icon">🎙</div>
+        <div class="transcript-empty-text">
+          録音すると逐語録が自動で入力されます<br>
+          手動で行を追加することもできます
+        </div>
+      </div>
+
+      <div id="tableWrap" style="display:none;">
+        <table class="record-table">
+          <thead>
+            <tr>
+              <th class="col-no">番号</th>
+              <th class="col-transcript">逐語録</th>
+              <th class="col-notes">気づき・改善案・新案</th>
+              <th class="col-advice">アドバイス</th>
+              <th class="col-del"></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <button class="add-row-btn" onclick="addRow()">＋ 行を追加</button>
+      </div>
+    </div>
+
+    <!-- Memo -->
+    <div class="memo-section">
+      <div class="memo-header" onclick="toggleMemo()">
+        <div class="memo-header-left">📝 <span>総合メモ・フィードバック</span></div>
+        <span class="memo-toggle" id="memoToggle">▼</span>
+      </div>
+      <div class="memo-body" id="memoBody">
+        <textarea class="memo-textarea" id="memoText"
+          placeholder="全体を通じての気づき、改善点、良かった点などを記録…"></textarea>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">文字起こし処理中…</div>
+</div>
+
+<!-- Countdown modal -->
+<div class="countdown-modal" id="countdownModal">
+  <div class="countdown-big" id="countdownNum">時間終了</div>
+  <div class="countdown-msg">15分が経過しました</div>
+  <button class="ctrl-btn primary" style="margin-top:16px;padding:12px 36px;font-size:14px;" onclick="dismissCountdown()">閉じる</button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── State ───
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+let timerCountdown = null;
+let isTimerRunning = false;
+let timerSecondsLeft = 15 * 60;
+const TIMER_DURATION = 15 * 60;
+let audioBlob = null;
+let entries = []; // {id, label, text, notes, advice}
+let nextId = 1;
+let speechRecognition = null;
+
+// ─── Init ───
+document.getElementById('sessionDate').value = new Date().toISOString().split('T')[0];
+updateTimerDisplay(TIMER_DURATION);
+
+// ─── Timer ───
+function formatTime(s) {
+  const m = Math.floor(Math.abs(s) / 60).toString().padStart(2, '0');
+  const sec = (Math.abs(s) % 60).toString().padStart(2, '0');
+  return `${m}:${sec}`;
+}
+
+function updateTimerDisplay(secsLeft) {
+  const disp = document.getElementById('timerDisplay');
+  const bar = document.getElementById('timerBar');
+  const label = document.getElementById('timerLabel');
+
+  disp.textContent = formatTime(secsLeft);
+  const pct = Math.max(0, (secsLeft / TIMER_DURATION) * 100);
+  bar.style.width = pct + '%';
+
+  if (secsLeft <= 60 && isTimerRunning) {
+    disp.className = 'timer-display active warning';
+    bar.className = 'timer-progress-bar warning';
+    label.textContent = '残り ' + secsLeft + '秒';
+  } else if (isTimerRunning) {
+    disp.className = 'timer-display active';
+    bar.className = 'timer-progress-bar';
+    label.textContent = '残り ' + formatTime(secsLeft);
+  } else {
+    disp.className = 'timer-display';
+    bar.className = 'timer-progress-bar';
+    label.textContent = '15分カウントダウン';
+  }
+}
+
+function startCountdown() {
+  if (isTimerRunning) return;
+  isTimerRunning = true;
+  timerSecondsLeft = TIMER_DURATION;
+
+  timerCountdown = setInterval(() => {
+    timerSecondsLeft--;
+    updateTimerDisplay(timerSecondsLeft);
+    if (timerSecondsLeft <= 0) {
+      clearInterval(timerCountdown);
+      isTimerRunning = false;
+      onTimerEnd();
+    }
+  }, 1000);
+}
+
+function stopCountdown() {
+  if (timerCountdown) clearInterval(timerCountdown);
+  isTimerRunning = false;
+  timerSecondsLeft = TIMER_DURATION;
+  updateTimerDisplay(TIMER_DURATION);
+}
+
+function onTimerEnd() {
+  document.getElementById('countdownModal').classList.add('show');
+  if (isRecording) stopRecording();
+  setStatus('done', 'タイマー終了 — 15分経過しました');
+  resetButtons();
+}
+
+function dismissCountdown() {
+  document.getElementById('countdownModal').classList.remove('show');
+}
+
+// ─── Recording ───
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      stream.getTracks().forEach(t => t.stop());
+      processRecording();
+    };
+
+    mediaRecorder.start(1000);
+    isRecording = true;
+    startSpeechRecognition();
+
+  } catch (e) {
+    showToast('マイクへのアクセスが許可されていません');
+    return false;
+  }
+  return true;
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  isRecording = false;
+  if (speechRecognition) {
+    try { speechRecognition.stop(); } catch (e) {}
+    speechRecognition = null;
+  }
+  document.getElementById('liveText').classList.remove('show');
+}
+
+// ─── Speech Recognition ───
+function startSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+
+  speechRecognition = new SR();
+  speechRecognition.lang = 'ja-JP';
+  speechRecognition.continuous = true;
+  speechRecognition.interimResults = true;
+
+  const liveEl = document.getElementById('liveText');
+  liveEl.classList.add('show');
+
+  let finalBuffer = '';
+  let silenceTimer = null;
+  let currentLabel = 'CC';
+
+  speechRecognition.onresult = (event) => {
+    let interim = '';
+    let final = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const t = event.results[i][0].transcript;
+      if (event.results[i].isFinal) { final += t; }
+      else { interim += t; }
+    }
+
+    if (interim) liveEl.textContent = '🎤 ' + interim;
+
+    if (final.trim()) {
+      finalBuffer += final;
+      liveEl.textContent = '✓ ' + finalBuffer;
+
+      clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(() => {
+        if (finalBuffer.trim()) {
+          addEntryFromRecording(currentLabel, finalBuffer.trim());
+          currentLabel = currentLabel === 'CC' ? 'CL' : 'CC';
+          finalBuffer = '';
+          liveEl.textContent = '';
+        }
+      }, 1800);
+    }
+  };
+
+  speechRecognition.onerror = () => {};
+  speechRecognition.onend = () => {
+    if (isRecording && speechRecognition) {
+      try { speechRecognition.start(); } catch (e) {}
+    }
+  };
+
+  try { speechRecognition.start(); } catch (e) {}
+}
+
+function addEntryFromRecording(label, text) {
+  entries.push({ id: nextId++, label, text, notes: '', advice: '' });
+  renderTable();
+  enableOutputButtons();
+}
+
+function processRecording() {
+  if (entries.length === 0) {
+    showLoading(true);
+    document.getElementById('loadingText').textContent = '文字起こし処理中…';
+    setTimeout(() => {
+      const demo = generateDemoTranscript();
+      demo.forEach(d => entries.push({ id: nextId++, label: d.label, text: d.text, notes: '', advice: '' }));
+      renderTable();
+      showLoading(false);
+      enableOutputButtons();
+      setStatus('done', `文字起こし完了 — ${entries.length}件の発言`);
+      showToast('文字起こしが完了しました ✦');
+    }, 1500);
+  } else {
+    setStatus('done', `録音完了 — ${entries.length}件の発言を取得`);
+    showToast('録音が完了しました ✦');
+  }
+}
+
+function generateDemoTranscript() {
+  return [
+    { label: 'CC', text: 'よろしくお願いします。今日はどのようなことをお話しいただけますか？' },
+    { label: 'CL', text: 'ええと…最近、仕事のことでずっとモヤモヤしていて。転職するべきか、迷っているんです。' },
+    { label: 'CC', text: 'そうですか。転職を考えていらっしゃるんですね。具体的には、どんなことがお気持ちの中にありますか？' },
+    { label: 'CL', text: '今の会社、もう6年いるんですけど、なんか…成長してる実感がなくて。毎日同じことの繰り返しというか。' },
+    { label: 'CC', text: '6年間ずっと続けてこられたんですね。成長の実感がないと感じはじめたのは、いつ頃からでしょうか？' },
+    { label: 'CL', text: '去年くらいからかな。後輩が入ってきて、自分がちゃんと教えられてるのかも不安で。' },
+  ];
+}
+
+// ─── Button Actions ───
+function startTimerOnly() {
+  if (isTimerRunning) return;
+  startCountdown();
+  setIndicator('timer-active', 'タイマー動作中');
+  setStatus('timer-active', 'タイマー開始 — 15:00 カウントダウン中');
+  document.getElementById('timerOnlyBtn').disabled = true;
+  document.getElementById('bothBtn').disabled = true;
+  document.getElementById('stopBtn').disabled = false;
+  showToast('タイマーをスタートしました ⏱');
+}
+
+async function toggleRecOnly() {
+  if (isRecording) {
+    stopRecording();
+    setIndicator('', '待機中');
+    document.getElementById('recOnlyBtn').textContent = '🎤 録音';
+    document.getElementById('recOnlyBtn').className = 'ctrl-btn';
+    document.getElementById('stopBtn').disabled = true;
+    document.getElementById('recOnlyBtn').disabled = false;
+    document.getElementById('bothBtn').disabled = false;
+    document.getElementById('timerOnlyBtn').disabled = false;
+    setStatus('done', '録音停止');
+  } else {
+    const ok = await startRecording();
+    if (!ok) return;
+    setIndicator('recording-active', '録音中…');
+    document.getElementById('recOnlyBtn').textContent = '🎤 停止';
+    document.getElementById('recOnlyBtn').className = 'ctrl-btn danger';
+    document.getElementById('stopBtn').disabled = false;
+    document.getElementById('timerOnlyBtn').disabled = true;
+    document.getElementById('bothBtn').disabled = true;
+    setStatus('recording-active', '録音中… マイク ON');
+    showToast('録音をスタートしました 🎤');
+  }
+}
+
+async function startBoth() {
+  if (isTimerRunning || isRecording) return;
+  const ok = await startRecording();
+  if (!ok) return;
+  startCountdown();
+  setIndicator('both-active', '録音 ＋ タイマー動作中');
+  document.getElementById('timerOnlyBtn').disabled = true;
+  document.getElementById('recOnlyBtn').disabled = true;
+  document.getElementById('bothBtn').disabled = true;
+  document.getElementById('stopBtn').disabled = false;
+  setStatus('recording-active', '録音中 + タイマー動作中');
+  showToast('録音 ＋ タイマーを同時スタート ⏱🎤');
+}
+
+function stopAll() {
+  if (isRecording) stopRecording();
+  if (isTimerRunning) stopCountdown();
+  resetButtons();
+  setStatus('done', '停止しました');
+  showToast('停止しました');
+}
+
+function resetButtons() {
+  setIndicator('', '停止済み');
+  document.getElementById('timerOnlyBtn').disabled = false;
+  document.getElementById('recOnlyBtn').disabled = false;
+  document.getElementById('recOnlyBtn').textContent = '🎤 録音';
+  document.getElementById('recOnlyBtn').className = 'ctrl-btn';
+  document.getElementById('bothBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
+}
+
+function setIndicator(cls, text) {
+  const ind = document.getElementById('recIndicator');
+  ind.className = 'rec-indicator' + (cls ? ' ' + cls : '');
+  document.getElementById('recIndicatorText').textContent = text;
+}
+
+function enableOutputButtons() {
+  document.getElementById('pdfBtn').disabled = false;
+  document.getElementById('txtBtn').disabled = false;
+  document.getElementById('correctBtn').disabled = false;
+}
+
+// ─── Table render ───
+function renderTable() {
+  const empty = document.getElementById('emptyState');
+  const wrap = document.getElementById('tableWrap');
+  const counter = document.getElementById('entryCounter');
+
+  if (entries.length === 0) {
+    empty.style.display = 'block';
+    wrap.style.display = 'none';
+    counter.textContent = '—';
+    return;
+  }
+
+  empty.style.display = 'none';
+  wrap.style.display = 'block';
+  counter.textContent = `${entries.length} 件`;
+
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = entries.map((e, i) => `
+    <tr id="row-${e.id}">
+      <td class="col-no">${String(i + 1).padStart(2, '0')}</td>
+      <td class="col-transcript">
+        <div class="transcript-cell-wrap">
+          <button class="label-btn ${e.label}" onclick="toggleLabel(${e.id})">${e.label}</button>
+          <textarea class="cell-editable" rows="3"
+            oninput="updateField(${e.id},'text',this.value)"
+            placeholder="逐語録">${escHtml(e.text)}</textarea>
+        </div>
+      </td>
+      <td class="col-notes">
+        <textarea class="cell-editable" rows="3"
+          oninput="updateField(${e.id},'notes',this.value)"
+          placeholder="気づき・改善案・新案">${escHtml(e.notes)}</textarea>
+      </td>
+      <td class="col-advice">
+        <textarea class="cell-editable" rows="3"
+          oninput="updateField(${e.id},'advice',this.value)"
+          placeholder="アドバイス">${escHtml(e.advice)}</textarea>
+      </td>
+      <td class="col-del"><button class="del-btn" onclick="deleteEntry(${e.id})" title="削除">✕</button></td>
+    </tr>
+  `).join('');
+
+  // Correction select
+  const sel = document.getElementById('correctionFrom');
+  sel.innerHTML = '<option value="">番号を選択</option>' +
+    entries.map((e, i) => `<option value="${i}">${String(i + 1).padStart(2, '0')} (${e.label}): ${e.text.slice(0, 18)}…</option>`).join('');
+}
+
+function escHtml(t) {
+  return (t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function addRow() {
+  entries.push({ id: nextId++, label: 'CC', text: '', notes: '', advice: '' });
+  renderTable();
+  enableOutputButtons();
+}
+
+function toggleLabel(id) {
+  const e = entries.find(e => e.id === id);
+  if (e) { e.label = e.label === 'CC' ? 'CL' : 'CC'; renderTable(); }
+}
+
+function updateField(id, field, val) {
+  const e = entries.find(e => e.id === id);
+  if (e) e[field] = val;
+}
+
+function deleteEntry(id) {
+  entries = entries.filter(e => e.id !== id);
+  renderTable();
+}
+
+// ─── Correction ───
+function showCorrection() { document.getElementById('correctionBanner').classList.add('show'); }
+function hideCorrection() { document.getElementById('correctionBanner').classList.remove('show'); }
+function applyCorrection() {
+  const fromIdx = parseInt(document.getElementById('correctionFrom').value);
+  if (isNaN(fromIdx)) { showToast('発言番号を選択してください'); return; }
+  for (let i = fromIdx; i < entries.length; i++) {
+    entries[i].label = entries[i].label === 'CC' ? 'CL' : 'CC';
+  }
+  renderTable();
+  hideCorrection();
+  showToast(`${fromIdx + 1}番目以降のラベルを入れ替えました ✓`);
+}
+
+// ─── Memo ───
+function toggleMemo() {
+  document.getElementById('memoBody').classList.toggle('open');
+  document.getElementById('memoToggle').classList.toggle('open');
+}
+
+// ─── PDF出力 ───
+async function downloadPdf() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
+
+  const date = document.getElementById('sessionDate').value;
+  const ccName = document.getElementById('ccName').value || 'CC';
+  const clName = document.getElementById('clName').value || 'CL';
+  const memo = document.getElementById('memoText').value;
+
+  const pageW = 297, pageH = 210;
+  const mL = 10, mR = 10, mT = 14, mB = 10;
+  const contentW = pageW - mL - mR;
+  let y = mT;
+
+  const colNo = 12;
+  const colTranscript = 90;
+  const colNotes = 80;
+  const colAdvice = contentW - colNo - colTranscript - colNotes;
+
+  function checkPage(needed = 12) {
+    if (y + needed > pageH - mB) {
+      doc.addPage();
+      y = mT;
+      drawTableHeader(y);
+      y += 10;
+    }
+  }
+
+  function drawTableHeader(ty) {
+    doc.setFillColor(245, 245, 242);
+    doc.rect(mL, ty, contentW, 9, 'F');
+    doc.setDrawColor(200, 200, 195);
+    doc.setLineWidth(0.4);
+    doc.rect(mL, ty, contentW, 9, 'S');
+    doc.setTextColor(100, 100, 95);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('NO.', mL + colNo / 2, ty + 5.5, { align: 'center' });
+    doc.text('逐語録', mL + colNo + colTranscript / 2, ty + 5.5, { align: 'center' });
+    doc.text('気づき・改善案・新案', mL + colNo + colTranscript + colNotes / 2, ty + 5.5, { align: 'center' });
+    doc.text('アドバイス', mL + colNo + colTranscript + colNotes + colAdvice / 2, ty + 5.5, { align: 'center' });
+    [colNo, colNo + colTranscript, colNo + colTranscript + colNotes].forEach(x => {
+      doc.setLineWidth(0.3);
+      doc.line(mL + x, ty, mL + x, ty + 9);
+    });
+  }
+
+  // Title bar
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, pageW, 12, 'F');
+  doc.setDrawColor(220, 220, 215);
+  doc.setLineWidth(0.4);
+  doc.line(0, 12, pageW, 12);
+  doc.setTextColor(80, 60, 20);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('面談記録', mL, 8);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(120, 118, 110);
+  doc.text(`実施日：${date}`, mL + 35, 8);
+  doc.text(`CC：${ccName}`, mL + 95, 8);
+  doc.text(`CL：${clName}`, mL + 140, 8);
+
+  y = 14;
+  drawTableHeader(y);
+  y += 10;
+
+  entries.forEach((e, i) => {
+    const ccLine = e.label === 'CC' ? `CC（${ccName}）` : `CL（${clName}）`;
+    const transcriptLines = doc.splitTextToSize((ccLine + '\n' + e.text), colTranscript - 4);
+    const notesLines = doc.splitTextToSize(e.notes || '', colNotes - 4);
+    const adviceLines = doc.splitTextToSize(e.advice || '', colAdvice - 4);
+
+    const rowLines = Math.max(transcriptLines.length, notesLines.length, adviceLines.length, 2);
+    const rowH = rowLines * 4.5 + 5;
+
+    checkPage(rowH);
+
+    const rowY = y;
+
+    if (i % 2 === 0) {
+      doc.setFillColor(252, 252, 250);
+      doc.rect(mL, rowY, contentW, rowH, 'F');
+    } else {
+      doc.setFillColor(246, 246, 243);
+      doc.rect(mL, rowY, contentW, rowH, 'F');
+    }
+
+    doc.setDrawColor(210, 210, 205);
+    doc.setLineWidth(0.2);
+    doc.rect(mL, rowY, contentW, rowH, 'S');
+    [colNo, colNo + colTranscript, colNo + colTranscript + colNotes].forEach(x => {
+      doc.line(mL + x, rowY, mL + x, rowY + rowH);
+    });
+
+    // NO
+    doc.setTextColor(160, 158, 150);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(String(i + 1).padStart(2, '0'), mL + colNo / 2, rowY + rowH / 2 + 1, { align: 'center' });
+
+    // Label badge
+    const labelColor = e.label === 'CC' ? [45, 122, 94] : [90, 74, 142];
+    doc.setFillColor(...labelColor);
+    doc.roundedRect(mL + colNo + 2, rowY + 2, 14, 5, 1, 1, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.text(e.label, mL + colNo + 9, rowY + 5.8, { align: 'center' });
+
+    // Transcript text
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(30, 30, 28);
+    const textLines = doc.splitTextToSize(e.text || '', colTranscript - 6);
+    textLines.forEach((line, li) => {
+      doc.text(line, mL + colNo + 2, rowY + 9 + li * 4.5);
+    });
+
+    // Notes
+    doc.setTextColor(80, 80, 75);
+    notesLines.forEach((line, li) => {
+      doc.text(line, mL + colNo + colTranscript + 2, rowY + 4 + li * 4.5);
+    });
+
+    // Advice
+    doc.setTextColor(130, 85, 20);
+    adviceLines.forEach((line, li) => {
+      doc.text(line, mL + colNo + colTranscript + colNotes + 2, rowY + 4 + li * 4.5);
+    });
+
+    y += rowH;
+  });
+
+  // Memo
+  if (memo.trim()) {
+    y += 6;
+    checkPage(20);
+    doc.setFillColor(253, 249, 240);
+    doc.setDrawColor(200, 180, 130);
+    doc.setLineWidth(0.3);
+    const memoLines = doc.splitTextToSize(memo, contentW - 8);
+    const memoH = memoLines.length * 5 + 12;
+    doc.rect(mL, y, contentW, memoH, 'FD');
+    doc.setTextColor(130, 100, 40);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('総合メモ・フィードバック', mL + 4, y + 6);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(60, 50, 30);
+    memoLines.forEach((line, li) => {
+      doc.text(line, mL + 4, y + 12 + li * 5);
+    });
+  }
+
+  const pages = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= pages; p++) {
+    doc.setPage(p);
+    doc.setFontSize(8);
+    doc.setTextColor(180, 178, 170);
+    doc.text(`${p} / ${pages}`, pageW - mR, pageH - 4, { align: 'right' });
+  }
+
+  const dateStr = date.replace(/-/g, '');
+  doc.save(`面談記録_${dateStr}.pdf`);
+  showToast('PDFを出力しました ✦');
+}
+
+// ─── Text DL ───
+function downloadTxt() {
+  const date = document.getElementById('sessionDate').value;
+  const ccName = document.getElementById('ccName').value || 'CC';
+  const clName = document.getElementById('clName').value || 'CL';
+  const memo = document.getElementById('memoText').value;
+
+  let txt = `【面談記録】\n実施日：${date}\nCC：${ccName} ／ CL：${clName}\n${'─'.repeat(60)}\n\n`;
+  txt += `番号\t発言者\t逐語録\t気づき・改善案・新案\tアドバイス\n${'─'.repeat(60)}\n`;
+  entries.forEach((e, i) => {
+    const speaker = e.label === 'CC' ? `CC（${ccName}）` : `CL（${clName}）`;
+    txt += `${String(i + 1).padStart(2, '0')}\t${speaker}\t${e.text}\t${e.notes}\t${e.advice}\n`;
+  });
+  if (memo.trim()) { txt += `\n${'─'.repeat(60)}\n【総合メモ】\n${memo}\n`; }
+
+  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `面談記録_${date.replace(/-/g, '')}.txt`;
+  a.click();
+  showToast('テキストファイルをダウンロードしました');
+}
+
+// ─── Helpers ───
+function setStatus(type, text) {
+  const bar = document.getElementById('statusBar');
+  bar.className = 'status-bar ' + type;
+  document.getElementById('statusText').textContent = text;
+}
+function showLoading(v) { document.getElementById('loadingOverlay').classList.toggle('show', v); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
