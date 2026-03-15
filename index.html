@@ -230,7 +230,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
       <div class="audio-label">🎧 録音データ</div>
       <audio id="audioEl" controls style="width:100%;margin-bottom:8px"></audio>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <button class="btn btn-danger" onclick="stopAudio()" style="font-size:12px;padding:8px">■ 再生停止</button>
+        <button class="btn" id="audioPlayBtn" onclick="toggleAudio()" style="font-size:12px;padding:8px">▶ 再生</button>
         <button class="btn" onclick="downloadAudio()" style="font-size:12px;padding:8px">↓ ダウンロード</button>
       </div>
     </div>
@@ -796,10 +796,23 @@ function downloadPdf() {
 }
 
 // ─── Audio ───
-function stopAudio() {
+function toggleAudio() {
   const audio = document.getElementById('audioEl');
-  audio.pause();
-  audio.currentTime = 0;
+  const btn = document.getElementById('audioPlayBtn');
+  if (audio.paused) {
+    audio.play();
+    btn.textContent = '■ 再生停止';
+    btn.className = 'btn btn-danger';
+    audio.onended = () => {
+      btn.textContent = '▶ 再生';
+      btn.className = 'btn';
+    };
+  } else {
+    audio.pause();
+    audio.currentTime = 0;
+    btn.textContent = '▶ 再生';
+    btn.className = 'btn';
+  }
 }
 
 function downloadAudio() {
