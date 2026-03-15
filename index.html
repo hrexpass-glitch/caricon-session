@@ -265,17 +265,6 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     </div>
   </div>
 
-  <div class="card" id="card-memo">
-    <div class="memo-hdr" onclick="toggleMemo()">
-      <span class="memo-hdr-txt">📝 総合メモ・フィードバック</span>
-      <span class="memo-toggle" id="memoToggle">▼</span>
-    </div>
-    <div class="memo-body" id="memoBody">
-      <textarea class="memo-ta" id="memoText" placeholder="全体を通じての気づき、改善点、良かった点などを記録…"></textarea>
-    </div>
-  </div>
-</div>
-
 <!-- 印刷用テーブル -->
 <div id="print-table" style="display:none;padding:0 12px">
   <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:8px">
@@ -290,6 +279,16 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     </thead>
     <tbody id="pt-body"></tbody>
   </table>
+</div>
+  <div class="card" id="card-memo">
+    <div class="memo-hdr" onclick="toggleMemo()">
+      <span class="memo-hdr-txt">📝 総合メモ・フィードバック</span>
+      <span class="memo-toggle" id="memoToggle">▼</span>
+    </div>
+    <div class="memo-body" id="memoBody">
+      <textarea class="memo-ta" id="memoText" placeholder="全体を通じての気づき、改善点、良かった点などを記録…"></textarea>
+    </div>
+  </div>
 </div>
 
 <!-- Timer end modal -->
