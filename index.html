@@ -270,11 +270,12 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
   <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:8px">
     <thead>
       <tr style="background:#f2f2f0">
-        <th style="border:1px solid #ccc;padding:5px;width:32px;text-align:center">番号</th>
-        <th style="border:1px solid #ccc;padding:5px;width:40px;text-align:center">話者</th>
+        <th style="border:1px solid #ccc;padding:5px;width:28px;text-align:center">番号</th>
+        <th style="border:1px solid #ccc;padding:5px;width:36px;text-align:center">話者</th>
+        <th style="border:1px solid #ccc;padding:5px;width:36px;text-align:center">時刻</th>
         <th style="border:1px solid #ccc;padding:5px">逐語録</th>
-        <th style="border:1px solid #ccc;padding:5px;width:27%">気づき・改善案・新案</th>
-        <th style="border:1px solid #ccc;padding:5px;width:20%">アドバイス</th>
+        <th style="border:1px solid #ccc;padding:5px;width:25%">気づき・改善案・新案</th>
+        <th style="border:1px solid #ccc;padding:5px;width:18%">アドバイス</th>
       </tr>
     </thead>
     <tbody id="pt-body"></tbody>
@@ -695,7 +696,10 @@ function startSpeechRecognition() {
       clearTimeout(silenceTimer);
       silenceTimer = setTimeout(() => {
         if (finalBuffer.trim()) {
-          entries.push({ id:nextId++, label:currentSpeaker, text:finalBuffer.trim(), notes:'', advice:'' });
+          const elapsed = TIMER_DURATION - timerSecondsLeft;
+          const mm = Math.floor(elapsed/60).toString().padStart(2,'0');
+          const ss = (elapsed%60).toString().padStart(2,'0');
+          entries.push({ id:nextId++, label:currentSpeaker, text:finalBuffer.trim(), notes:'', advice:'', time:mm+':'+ss });
           renderEntries(); enableBtns();
           finalBuffer = ''; liveEl.textContent = '';
         }
@@ -719,6 +723,7 @@ function renderEntries() {
       <div class="entry-top">
         <span class="entry-no">${String(i+1).padStart(2,'0')}</span>
         <button class="label-pill ${e.label}" onclick="toggleLabel(${e.id})">${e.label}</button>
+        ${e.time ? `<span style="font-size:10px;color:var(--dim);margin-left:2px">${e.time}</span>` : ''}
         <button class="del-btn" onclick="delEntry(${e.id})">✕</button>
       </div>
       <textarea class="entry-ta" rows="3" oninput="updateField(${e.id},'text',this.value)" placeholder="逐語録">${esc(e.text)}</textarea>
@@ -736,7 +741,7 @@ function renderEntries() {
 }
 
 function esc(t) { return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function addRow() { entries.push({id:nextId++,label:currentSpeaker||'CC',text:'',notes:'',advice:''}); renderEntries(); enableBtns(); }
+function addRow() { entries.push({id:nextId++,label:currentSpeaker||'CC',text:'',notes:'',advice:'',time:''}); renderEntries(); enableBtns(); }
 function toggleLabel(id) { const e=entries.find(e=>e.id===id); if(e){e.label=e.label==='CC'?'CL':'CC'; renderEntries();} }
 function updateField(id,field,val) { const e=entries.find(e=>e.id===id); if(e) e[field]=val; }
 function delEntry(id) { if(!confirm('この行を削除しますか？')) return; entries=entries.filter(e=>e.id!==id); renderEntries(); }
@@ -775,6 +780,7 @@ function downloadPdf() {
     return '<tr style="page-break-inside:avoid">'
       + '<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;color:#888;font-size:10px">'+String(i+1).padStart(2,'0')+'</td>'
       + '<td style="border:1px solid #ccc;padding:4px 5px;text-align:center"><span style="display:inline-block;background:'+lc+';color:#fff;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:3px">'+e.label+'</span><br><span style="font-size:9px;color:#666">'+name+'</span></td>'
+      + '<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;font-size:10px;color:#888">'+(e.time||'—')+'</td>'
       + '<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6">'+(e.text||'').replace(/</g,'&lt;')+'</td>'
       + '<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#444">'+(e.notes||'').replace(/</g,'&lt;')+'</td>'
       + '<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#8a5510">'+(e.advice||'').replace(/</g,'&lt;')+'</td>'
