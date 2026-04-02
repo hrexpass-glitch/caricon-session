@@ -227,7 +227,7 @@ input[type=range]#timerRange::-moz-range-thumb {
     <div class="field" style="margin-bottom:10px">
       <label>カスタム時間（分）</label>
       <div style="display:flex;align-items:center;gap:10px">
-        <input type="range" id="timerRange" min="1" max="30" value="15" oninput="onRangeChange(this.value)" style="flex:1">
+        <input type="range" id="timerRange" min="0" max="30" value="15" oninput="onRangeChange(this.value)" style="flex:1">
         <span id="timerRangeVal" style="font-size:16px;font-weight:700;color:var(--ac);min-width:40px;text-align:right">15分</span>
       </div>
     </div>
@@ -370,7 +370,7 @@ renderSessionList();
 
 // ─── スライダー背景更新（塗り分け）───
 function updateSliderBg(val) {
-  const pct = ((val - 1) / (30 - 1)) * 100;
+  const pct = (val / 30) * 100;
   const el = document.getElementById('timerRange');
   if (el) el.style.background = `linear-gradient(to right, var(--ac) ${pct}%, var(--border2) ${pct}%)`;
 }
@@ -491,10 +491,10 @@ function setTimer(min) {
 
 function onRangeChange(val) {
   if (isTimerRunning) return;
-  const mins = parseInt(val);
+  const mins = Math.max(1, parseInt(val));
   TIMER_DURATION = mins*60; timerSecondsLeft = TIMER_DURATION;
   document.getElementById('timerRangeVal').textContent = mins+'分';
-  updateSliderBg(mins);
+  updateSliderBg(parseInt(val));
   updateTimerUI();
 }
 
