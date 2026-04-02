@@ -39,7 +39,6 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .btn-danger{background:var(--red-bg);border-color:var(--red-bd);color:var(--red)}
 .btn-stop{background:#fff0f0;border-color:var(--red-bd);color:var(--red);font-weight:700}
 .btn-full{width:100%}
-.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .timer-num{text-align:center;font-size:52px;font-variant-numeric:tabular-nums;letter-spacing:2px;color:var(--dim);padding:6px 0;font-family:'Noto Serif JP',serif;transition:color .3s}
 .timer-num.active{color:var(--ac)}
 .timer-num.warning{color:var(--red);animation:blink 1s infinite}
@@ -130,6 +129,38 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 .audio-player audio{width:100%;margin-top:4px}
 .audio-label{font-size:11px;color:var(--muted);margin-bottom:4px}
 
+/* ─── スライダー：つまみのズレをCSSで補正 ─── */
+input[type=range]#timerRange {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to right, var(--ac) 50%, var(--border2) 50%);
+  border-radius: 2px;
+  outline: none;
+  accent-color: var(--ac);
+}
+input[type=range]#timerRange::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--ac);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+}
+input[type=range]#timerRange::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--ac);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+}
+
 @media print {
   .hdr-back,.hdr-btn,.fab,#card-timer,#card-actions,
   .corr-bar,.add-row-btn,.speaker-bar,.live-text,.status,
@@ -188,21 +219,16 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
   <div class="card" id="card-timer">
     <div class="sec-lbl">タイマー &amp; 録音</div>
 
-    <div style="display:flex;gap:8px;margin-bottom:12px">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
       <button class="btn" style="flex:1;font-weight:700;font-size:14px;line-height:1.4" onclick="setTimer(15)">⏱ 15分<br><span style="font-size:9px;font-weight:400;opacity:.7">国キャリ</span></button>
       <button class="btn" style="flex:1;font-weight:700;font-size:14px;line-height:1.4" onclick="setTimer(30)">⏱ 30分<br><span style="font-size:9px;font-weight:400;opacity:.7">1級・2級</span></button>
     </div>
 
-    <div style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-size:11px;color:var(--muted);font-weight:500">カスタム</span>
-        <span id="timerRangeVal" style="font-size:16px;font-weight:700;color:var(--ac)">15分</span>
-      </div>
-      <input type="range" id="timerRange" min="1" max="30" step="1" value="15"
-        oninput="onRangeChange(this.value)"
-        style="width:100%;accent-color:var(--ac);height:6px;cursor:pointer">
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px">
-        <span>1分</span><span>|</span><span>10分</span><span>|</span><span>20分</span><span>|</span><span>30分</span>
+    <div class="field" style="margin-bottom:10px">
+      <label>カスタム時間（分）</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="range" id="timerRange" min="1" max="30" value="15" oninput="onRangeChange(this.value)" style="flex:1">
+        <span id="timerRangeVal" style="font-size:16px;font-weight:700;color:var(--ac);min-width:40px;text-align:right">15分</span>
       </div>
     </div>
 
@@ -227,7 +253,6 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 
     <div class="live-text" id="liveText"></div>
 
-    <!-- 録音再生 -->
     <div class="audio-player" id="audioPlayer">
       <div class="audio-label">🎧 録音データ</div>
       <audio id="audioEl" controls style="width:100%;margin-bottom:8px"></audio>
@@ -267,7 +292,6 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     </div>
   </div>
 
-<!-- 印刷用テーブル -->
 <div id="print-table" style="display:none;padding:0 12px">
   <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:8px">
     <thead>
@@ -295,7 +319,6 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
   </div>
 </div>
 
-<!-- Timer end modal -->
 <div class="modal-ov" id="timerModal">
   <div class="modal-box">
     <div class="modal-big">⏰</div>
@@ -311,16 +334,14 @@ const STORAGE_KEY = 'caricon_sessions_v3';
 
 (function migrate() {
   try {
-    const oldKeys = ['caricon_sessions_v2', 'caricon_sessions_v1', 'caricon_sessions'];
-    oldKeys.forEach(key => {
+    ['caricon_sessions_v2','caricon_sessions_v1','caricon_sessions'].forEach(key => {
       const old = localStorage.getItem(key);
       if (!old) return;
       const oldData = JSON.parse(old);
-      if (!oldData || oldData.length === 0) return;
+      if (!oldData || !oldData.length) return;
       const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      const currentIds = current.map(s => s.id);
-      const merged = [...current, ...oldData.filter(s => !currentIds.includes(s.id))];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      const ids = current.map(s => s.id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...current, ...oldData.filter(s => !ids.includes(s.id))]));
       localStorage.removeItem(key);
     });
   } catch(e) {}
@@ -331,28 +352,33 @@ function saveSessions(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
 
 let sessions = loadSessions();
 let currentSessionId = null;
-let entries = [];
-let nextId = 1;
+let entries = [], nextId = 1;
 let TIMER_DURATION = 15 * 60;
 let timerSecondsLeft = TIMER_DURATION;
-let isTimerRunning = false;
-let timerInterval = null;
-let isRecording = false;
-let isPaused = false;
-let mediaRecorder = null;
-let audioStream = null; // ストリームを保持して再開時に使い回す
-let allAudioChunks = [];
-let audioBlob = null;
+let isTimerRunning = false, timerInterval = null;
+let isRecording = false, isPaused = false;
+let mediaRecorder = null, audioStream = null;
+let allAudioChunks = [], audioBlob = null;
 let speechRecognition = null;
 let currentSpeaker = 'CC';
 
 document.getElementById('sessionDate').value = new Date().toISOString().split('T')[0];
+
+// スライダーの背景をJS側でも初期化
+updateSliderBg(15);
 renderSessionList();
+
+// ─── スライダー背景更新（塗り分け）───
+function updateSliderBg(val) {
+  const pct = ((val - 1) / (30 - 1)) * 100;
+  const el = document.getElementById('timerRange');
+  if (el) el.style.background = `linear-gradient(to right, var(--ac) ${pct}%, var(--border2) ${pct}%)`;
+}
 
 // ─── Session List ───
 function renderSessionList() {
   const wrap = document.getElementById('session-list-wrap');
-  if (sessions.length === 0) {
+  if (!sessions.length) {
     wrap.innerHTML = '<div class="empty-state" style="padding-top:80px"><div class="empty-icon">📋</div><div class="empty-text">面談記録がまだありません<br>「＋ 新しい面談」から始めましょう</div></div>';
     return;
   }
@@ -365,99 +391,83 @@ function renderSessionList() {
     <div class="session-item${s.bookmarked?' bookmarked':''}" onclick="openSession('${s.id}')">
       <div class="session-item-top">
         <span class="session-title">${s.title || s.date+'の面談' || '無題の面談'}</span>
-        <button class="session-bookmark" onclick="event.stopPropagation();toggleBookmark('${s.id}')" title="ブックマーク">${s.bookmarked?'★':'☆'}</button>
+        <button class="session-bookmark" onclick="event.stopPropagation();toggleBookmark('${s.id}')">${s.bookmarked?'★':'☆'}</button>
         <button class="session-del" onclick="event.stopPropagation();deleteSession('${s.id}')">🗑</button>
       </div>
       <div class="session-meta">📅 ${s.date||'日付未設定'} ／ CC: ${s.ccName||'未設定'} ／ CL: ${s.clName||'未設定'}</div>
       <div class="session-count">${s.entries?s.entries.length:0} 件の発言</div>
-      ${s.note ? `<div class="session-note">📝 ${s.note}</div>` : ''}
+      ${s.note?`<div class="session-note">📝 ${s.note}</div>`:''}
     </div>
   `).join('');
 }
 
 function toggleBookmark(id) {
-  const s = sessions.find(x => x.id === id);
-  if (!s) return;
-  s.bookmarked = !s.bookmarked;
-  saveSessions(sessions);
-  renderSessionList();
+  const s = sessions.find(x => x.id===id); if (!s) return;
+  s.bookmarked = !s.bookmarked; saveSessions(sessions); renderSessionList();
   toast(s.bookmarked ? '★ ブックマークしました' : 'ブックマークを解除しました');
 }
 
 function newSession() {
   currentSessionId = 'session_' + Date.now();
   entries = []; nextId = 1; audioBlob = null; allAudioChunks = [];
-  resetTimerFull();
-  finalizeRec();
+  finalizeRec(); resetTimerFull();
   const today = new Date().toISOString().split('T')[0];
-  document.getElementById('sessionDate').value = today;
-  document.getElementById('sessionTitle').value = today + 'の面談';
-  document.getElementById('ccName').value = '';
-  document.getElementById('clName').value = '';
-  document.getElementById('sessionNote').value = '';
-  document.getElementById('memoText').value = '';
-  document.getElementById('session-hdr-title').textContent = today + 'の面談';
+  ['sessionDate','sessionTitle','ccName','clName','sessionNote','memoText'].forEach(id => {
+    document.getElementById(id).value = id==='sessionDate' ? today : id==='sessionTitle' ? today+'の面談' : '';
+  });
+  document.getElementById('session-hdr-title').textContent = today+'の面談';
   document.getElementById('audioPlayer').classList.remove('show');
-  currentSpeaker = 'CC';
-  updateSpeakerBar();
-  renderEntries();
-  showPage('page-session');
+  currentSpeaker = 'CC'; updateSpeakerBar(); renderEntries(); showPage('page-session');
 }
 
 function openSession(id) {
-  const s = sessions.find(x => x.id === id);
-  if (!s) return;
+  const s = sessions.find(x => x.id===id); if (!s) return;
   currentSessionId = id;
   entries = (s.entries||[]).map(e=>({...e}));
-  nextId = entries.length > 0 ? Math.max(...entries.map(e=>e.id))+1 : 1;
+  nextId = entries.length ? Math.max(...entries.map(e=>e.id))+1 : 1;
   audioBlob = null; allAudioChunks = [];
-  document.getElementById('sessionTitle').value = s.title || '';
-  document.getElementById('sessionDate').value = s.date || '';
-  document.getElementById('ccName').value = s.ccName || '';
-  document.getElementById('clName').value = s.clName || '';
-  document.getElementById('sessionNote').value = s.note || '';
-  document.getElementById('memoText').value = s.memo || '';
-  document.getElementById('session-hdr-title').textContent = s.title || s.date || '面談記録';
+  document.getElementById('sessionTitle').value = s.title||'';
+  document.getElementById('sessionDate').value = s.date||'';
+  document.getElementById('ccName').value = s.ccName||'';
+  document.getElementById('clName').value = s.clName||'';
+  document.getElementById('sessionNote').value = s.note||'';
+  document.getElementById('memoText').value = s.memo||'';
+  document.getElementById('session-hdr-title').textContent = s.title||s.date||'面談記録';
   document.getElementById('audioPlayer').classList.remove('show');
-  resetTimerFull();
-  renderEntries();
-  if (entries.length > 0) enableBtns();
+  resetTimerFull(); renderEntries();
+  if (entries.length) enableBtns();
   showPage('page-session');
 }
 
 function deleteSession(id) {
   if (!confirm('この面談記録を削除しますか？')) return;
-  sessions = sessions.filter(s => s.id !== id);
-  saveSessions(sessions);
-  renderSessionList();
-  toast('削除しました');
+  sessions = sessions.filter(s => s.id!==id); saveSessions(sessions); renderSessionList(); toast('削除しました');
 }
 
 function saveSession() {
-  const title = document.getElementById('sessionTitle').value || document.getElementById('sessionDate').value + 'の面談';
-  const date = document.getElementById('sessionDate').value;
-  const ccName = document.getElementById('ccName').value;
-  const clName = document.getElementById('clName').value;
-  const note = document.getElementById('sessionNote').value;
-  const memo = document.getElementById('memoText').value;
-  const existing = sessions.find(s => s.id === currentSessionId);
+  const title = document.getElementById('sessionTitle').value || document.getElementById('sessionDate').value+'の面談';
+  const existing = sessions.find(s => s.id===currentSessionId);
   const data = {
-    id: currentSessionId, title, date, ccName, clName, note, memo,
-    entries: entries.map(e=>({...e})),
-    bookmarked: existing ? existing.bookmarked : false,
-    savedAt: Date.now()
+    id:currentSessionId,
+    title, date:document.getElementById('sessionDate').value,
+    ccName:document.getElementById('ccName').value,
+    clName:document.getElementById('clName').value,
+    note:document.getElementById('sessionNote').value,
+    memo:document.getElementById('memoText').value,
+    entries:entries.map(e=>({...e})),
+    bookmarked:existing?existing.bookmarked:false, savedAt:Date.now()
   };
-  const idx = sessions.findIndex(s => s.id === currentSessionId);
-  if (idx >= 0) sessions[idx] = data; else sessions.push(data);
+  const idx = sessions.findIndex(s => s.id===currentSessionId);
+  if (idx>=0) sessions[idx]=data; else sessions.push(data);
   saveSessions(sessions);
   document.getElementById('session-hdr-title').textContent = title;
   toast('保存しました ✓');
 }
 
 function backToList() {
-  if (isRecording || isTimerRunning || isPaused) { finalizeRec(); if (isTimerRunning) { clearInterval(timerInterval); isTimerRunning = false; } }
-  showPage('page-list');
-  renderSessionList();
+  finalizeRec();
+  if (isTimerRunning) { clearInterval(timerInterval); isTimerRunning = false; }
+  showPage('page-list'); renderSessionList();
 }
 
 function showPage(id) {
@@ -471,20 +481,20 @@ function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).
 
 function setTimer(min) {
   if (isTimerRunning) return;
-  TIMER_DURATION = min * 60;
-  timerSecondsLeft = TIMER_DURATION;
-  document.getElementById('timerRange').value = Math.min(min, 30);
-  document.getElementById('timerRangeVal').textContent = min + '分';
-  updateTimerUI();
-  toast(min + '分にセットしました');
+  TIMER_DURATION = min*60; timerSecondsLeft = TIMER_DURATION;
+  const capped = Math.min(min, 30);
+  document.getElementById('timerRange').value = capped;
+  document.getElementById('timerRangeVal').textContent = min+'分';
+  updateSliderBg(capped);
+  updateTimerUI(); toast(min+'分にセットしました');
 }
 
 function onRangeChange(val) {
   if (isTimerRunning) return;
   const mins = parseInt(val);
-  TIMER_DURATION = mins * 60;
-  timerSecondsLeft = TIMER_DURATION;
-  document.getElementById('timerRangeVal').textContent = mins + '分';
+  TIMER_DURATION = mins*60; timerSecondsLeft = TIMER_DURATION;
+  document.getElementById('timerRangeVal').textContent = mins+'分';
+  updateSliderBg(mins);
   updateTimerUI();
 }
 
@@ -492,199 +502,138 @@ function updateTimerUI() {
   const d = document.getElementById('timerDisplay');
   const bar = document.getElementById('timerBar');
   const lbl = document.getElementById('timerLbl');
-  bar.style.width = (timerSecondsLeft / TIMER_DURATION * 100) + '%';
+  bar.style.width = (timerSecondsLeft/TIMER_DURATION*100)+'%';
   d.textContent = fmt(timerSecondsLeft);
-  if (timerSecondsLeft <= 60 && isTimerRunning) {
+  if (timerSecondsLeft<=60 && isTimerRunning) {
     d.className='timer-num warning'; bar.className='timer-bar warning';
-    lbl.textContent = '残り ' + timerSecondsLeft + '秒';
+    lbl.textContent='残り '+timerSecondsLeft+'秒';
   } else if (isTimerRunning) {
     d.className='timer-num active'; bar.className='timer-bar';
-    lbl.textContent = '残り ' + fmt(timerSecondsLeft);
+    lbl.textContent='残り '+fmt(timerSecondsLeft);
   } else {
     d.className='timer-num'; bar.className='timer-bar';
-    lbl.textContent = timerSecondsLeft === TIMER_DURATION ? (TIMER_DURATION/60)+'分カウントダウン' : '一時停止中 — '+fmt(timerSecondsLeft);
+    lbl.textContent=timerSecondsLeft===TIMER_DURATION?(TIMER_DURATION/60)+'分カウントダウン':'一時停止中 — '+fmt(timerSecondsLeft);
   }
 }
 
 function startCountdown() {
   if (isTimerRunning) return;
   isTimerRunning = true;
-  timerInterval = setInterval(() => {
-    timerSecondsLeft--;
-    updateTimerUI();
-    if (timerSecondsLeft <= 0) { clearInterval(timerInterval); isTimerRunning = false; onTimerEnd(); }
-  }, 1000);
-  setStatus('timer','タイマー動作中 — '+fmt(timerSecondsLeft));
+  timerInterval = setInterval(()=>{ timerSecondsLeft--; updateTimerUI(); if(timerSecondsLeft<=0){clearInterval(timerInterval);isTimerRunning=false;onTimerEnd();} },1000);
   updateTimerUI();
 }
 
 function resetTimerFull() {
-  clearInterval(timerInterval);
-  isTimerRunning = false;
+  clearInterval(timerInterval); isTimerRunning = false; isPaused = false;
   timerSecondsLeft = TIMER_DURATION;
-  document.getElementById('startBtn').disabled = false;
-  document.getElementById('startBtn').textContent = '▶ スタート';
-  document.getElementById('startBtn').className = 'btn btn-full btn-primary';
-  document.getElementById('startBtn').style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
+  const btn = document.getElementById('startBtn');
+  btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
+  btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
   updateTimerUI();
 }
 
 function onTimerEnd() {
   beep();
   document.getElementById('timerModal').classList.add('show');
-  if (isRecording) finalizeRec();
+  finalizeRec();
   setStatus('done','タイマー終了');
   const btn = document.getElementById('startBtn');
-  btn.textContent = '▶ スタート';
-  btn.className = 'btn btn-full btn-primary';
-  btn.style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
-  saveSession();
-  toast('タイマー終了 — 自動保存しました ✓');
+  btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
+  btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
+  saveSession(); toast('タイマー終了 — 自動保存しました ✓');
 }
 
 function dismissModal() { document.getElementById('timerModal').classList.remove('show'); }
 
 function beep() {
   try {
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const ctx = new(window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.4, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+1.0);
+    osc.frequency.value=880; gain.gain.setValueAtTime(0.4,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+1.0);
     osc.start(ctx.currentTime); osc.stop(ctx.currentTime+1.0);
-  } catch(e) {}
+  } catch(e){}
 }
 
-// ─── Recording ───
-// ★ 根本修正：ストリームを維持したままpause/resumeする
+// ─── Recording（一時停止→再開でも音声が途切れない）───
 async function startRec() {
   try {
-    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioStream = await navigator.mediaDevices.getUserMedia({audio:true});
     allAudioChunks = [];
     mediaRecorder = new MediaRecorder(audioStream);
-    mediaRecorder.ondataavailable = e => {
-      if (e.data.size > 0) allAudioChunks.push(e.data);
-    };
+    mediaRecorder.ondataavailable = e => { if(e.data.size>0) allAudioChunks.push(e.data); };
     mediaRecorder.onstop = () => {
-      // ストリームは止めない（一時停止のため）
-      audioBlob = new Blob(allAudioChunks, { type: 'audio/webm' });
-      const url = URL.createObjectURL(audioBlob);
-      document.getElementById('audioEl').src = url;
+      audioBlob = new Blob(allAudioChunks,{type:'audio/webm'});
+      document.getElementById('audioEl').src = URL.createObjectURL(audioBlob);
       document.getElementById('audioPlayer').classList.add('show');
     };
     mediaRecorder.start(1000);
-    isRecording = true;
-    isPaused = false;
+    isRecording=true; isPaused=false;
     startSpeechRecognition();
     return true;
-  } catch(e) {
-    toast('マイクへのアクセスが許可されていません');
-    return false;
-  }
+  } catch(e) { toast('マイクへのアクセスが許可されていません'); return false; }
 }
 
 function pauseRec() {
-  // MediaRecorderをpauseして音声チャンクの収集を一時停止
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    mediaRecorder.pause();
-  }
-  isPaused = true;
-  if (speechRecognition) { try { speechRecognition.stop(); } catch(e) {} speechRecognition = null; }
+  if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.pause();
+  isPaused=true;
+  if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
   document.getElementById('liveText').classList.remove('show');
 }
 
 function resumeRec() {
-  // 同じMediaRecorderをresumeして続きを録音
-  if (mediaRecorder && mediaRecorder.state === 'paused') {
-    mediaRecorder.resume();
-  }
-  isPaused = false;
-  startSpeechRecognition();
+  if(mediaRecorder && mediaRecorder.state==='paused') mediaRecorder.resume();
+  isPaused=false; startSpeechRecognition();
 }
 
 function finalizeRec() {
-  // 完全終了（リセット時のみ）
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-  if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; }
-  isRecording = false; isPaused = false;
-  if (speechRecognition) { try { speechRecognition.stop(); } catch(e) {} speechRecognition = null; }
+  if(mediaRecorder && mediaRecorder.state!=='inactive') mediaRecorder.stop();
+  if(audioStream){audioStream.getTracks().forEach(t=>t.stop()); audioStream=null;}
+  isRecording=false; isPaused=false;
+  if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
   document.getElementById('liveText').classList.remove('show');
 }
 
-// 後方互換のためstopRecは完全終了として残す
-function stopRec() { finalizeRec(); }
-
+// ─── Start / Pause / Resume ───
 function toggleStart() {
-  if (!isRecording && !isTimerRunning) {
-    // 初回スタート
-    startBoth();
-  } else if (isRecording && !isPaused) {
-    // 録音中 → 一時停止
-    pauseBoth();
-  } else if (isPaused) {
-    // 一時停止中 → 再開
-    resumeBoth();
-  }
+  if (!isRecording && !isTimerRunning && !isPaused) { startBoth(); }
+  else if (isRecording && !isPaused) { pauseBoth(); }
+  else if (isPaused) { resumeBoth(); }
 }
 
 async function startBoth() {
-  currentSpeaker = 'CC';
-  updateSpeakerBar();
+  currentSpeaker='CC'; updateSpeakerBar();
   const ok = await startRec();
   startCountdown();
   const btn = document.getElementById('startBtn');
-  btn.textContent = '⏸ 一時停止';
-  btn.className = 'btn btn-full btn-stop';
-  btn.style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
-  setStatus('rec', ok ? '録音中 + タイマー動作中' : 'タイマー動作中（マイク未使用）');
+  btn.textContent='⏸ 一時停止'; btn.className='btn btn-full btn-stop';
+  btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
+  setStatus('rec', ok?'録音中 + タイマー動作中':'タイマー動作中（マイク未使用）');
 }
 
 function pauseBoth() {
-  pauseRec();
-  // タイマーも一時停止
-  clearInterval(timerInterval);
-  isTimerRunning = false;
+  pauseRec(); clearInterval(timerInterval); isTimerRunning=false;
   const btn = document.getElementById('startBtn');
-  btn.textContent = '▶ 再開';
-  btn.className = 'btn btn-full btn-primary';
-  btn.style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
-  updateTimerUI();
-  setStatus('', '一時停止中');
-  toast('一時停止しました');
+  btn.textContent='▶ 再開'; btn.className='btn btn-full btn-primary';
+  btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
+  updateTimerUI(); setStatus('','一時停止中'); toast('一時停止しました');
 }
 
 function resumeBoth() {
-  resumeRec();
-  startCountdown();
+  resumeRec(); startCountdown();
   const btn = document.getElementById('startBtn');
-  btn.textContent = '⏸ 一時停止';
-  btn.className = 'btn btn-full btn-stop';
-  btn.style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
-  setStatus('rec', '録音中 + タイマー動作中');
-  toast('再開しました');
-}
-
-function stopAll() {
-  finalizeRec();
-  if (isTimerRunning) { clearInterval(timerInterval); isTimerRunning = false; }
-  const btn = document.getElementById('startBtn');
-  btn.textContent = '▶ スタート';
-  btn.className = 'btn btn-full btn-primary';
-  btn.style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
-  updateTimerUI();
-  setStatus('done', '停止しました');
+  btn.textContent='⏸ 一時停止'; btn.className='btn btn-full btn-stop';
+  btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
+  setStatus('rec','録音中 + タイマー動作中'); toast('再開しました');
 }
 
 // ─── Speaker ───
 function updateSpeakerBar() {
-  const ccN = document.getElementById('ccName').value || 'CC';
-  const clN = document.getElementById('clName').value || 'CL';
-  const bar = document.getElementById('speakerBar');
-  const nameEl = document.getElementById('speakerName');
-  const btn = document.getElementById('switchBtn');
-  if (currentSpeaker === 'CC') {
+  const ccN=document.getElementById('ccName').value||'CC';
+  const clN=document.getElementById('clName').value||'CL';
+  const bar=document.getElementById('speakerBar'), nameEl=document.getElementById('speakerName'), btn=document.getElementById('switchBtn');
+  if(currentSpeaker==='CC'){
     bar.className='speaker-bar is-cc'; nameEl.className='speaker-name cc';
     nameEl.textContent='CC（'+ccN+'）'; btn.className='switch-btn to-cl'; btn.textContent='CL に切替';
   } else {
@@ -692,66 +641,50 @@ function updateSpeakerBar() {
     nameEl.textContent='CL（'+clN+'）'; btn.className='switch-btn to-cc'; btn.textContent='CC に切替';
   }
 }
-
-function switchSpeaker() {
-  currentSpeaker = currentSpeaker === 'CC' ? 'CL' : 'CC';
-  updateSpeakerBar();
-  toast(currentSpeaker + ' に切り替えました');
-}
+function switchSpeaker() { currentSpeaker=currentSpeaker==='CC'?'CL':'CC'; updateSpeakerBar(); toast(currentSpeaker+' に切り替えました'); }
 
 // ─── Speech ───
 function startSpeechRecognition() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return;
-  speechRecognition = new SR();
-  speechRecognition.lang = 'ja-JP';
-  speechRecognition.continuous = true;
-  speechRecognition.interimResults = true;
-  const liveEl = document.getElementById('liveText');
-  liveEl.classList.add('show');
-  let finalBuffer = '';
-  let silenceTimer = null;
-  speechRecognition.onresult = (event) => {
-    let interim='', final='';
-    for (let i=event.resultIndex; i<event.results.length; i++) {
-      const t = event.results[i][0].transcript;
-      if (event.results[i].isFinal) final += t; else interim += t;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) return;
+  speechRecognition=new SR(); speechRecognition.lang='ja-JP'; speechRecognition.continuous=true; speechRecognition.interimResults=true;
+  const liveEl=document.getElementById('liveText'); liveEl.classList.add('show');
+  let finalBuffer='', silenceTimer=null;
+  speechRecognition.onresult=event=>{
+    let interim='',final='';
+    for(let i=event.resultIndex;i<event.results.length;i++){
+      const t=event.results[i][0].transcript;
+      if(event.results[i].isFinal) final+=t; else interim+=t;
     }
-    if (interim) liveEl.textContent = '🎤 ' + interim;
-    if (final.trim()) {
-      finalBuffer += final;
-      liveEl.textContent = '✓ ' + finalBuffer;
+    if(interim) liveEl.textContent='🎤 '+interim;
+    if(final.trim()){
+      finalBuffer+=final; liveEl.textContent='✓ '+finalBuffer;
       clearTimeout(silenceTimer);
-      silenceTimer = setTimeout(() => {
-        if (finalBuffer.trim()) {
-          const elapsed = TIMER_DURATION - timerSecondsLeft;
-          const mm = Math.floor(elapsed/60).toString().padStart(2,'0');
-          const ss = (elapsed%60).toString().padStart(2,'0');
-          entries.push({ id:nextId++, label:currentSpeaker, text:finalBuffer.trim(), notes:'', advice:'', time:mm+':'+ss });
-          renderEntries(); enableBtns();
-          finalBuffer = ''; liveEl.textContent = '';
+      silenceTimer=setTimeout(()=>{
+        if(finalBuffer.trim()){
+          const el=TIMER_DURATION-timerSecondsLeft;
+          const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
+          entries.push({id:nextId++,label:currentSpeaker,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
+          renderEntries(); enableBtns(); finalBuffer=''; liveEl.textContent='';
         }
-      }, 1800);
+      },1800);
     }
   };
-  speechRecognition.onerror = () => {};
-  speechRecognition.onend = () => { if (isRecording) try { speechRecognition.start(); } catch(e) {} };
-  try { speechRecognition.start(); } catch(e) {}
+  speechRecognition.onerror=()=>{};
+  speechRecognition.onend=()=>{ if(isRecording&&!isPaused) try{speechRecognition.start();}catch(e){} };
+  try{speechRecognition.start();}catch(e){}
 }
 
 // ─── Entries ───
 function renderEntries() {
-  const empty = document.getElementById('emptyState');
-  const wrap = document.getElementById('tableWrap');
-  const counter = document.getElementById('entryCounter');
-  if (entries.length === 0) { empty.style.display='block'; wrap.style.display='none'; counter.textContent='—'; return; }
+  const empty=document.getElementById('emptyState'), wrap=document.getElementById('tableWrap'), counter=document.getElementById('entryCounter');
+  if(!entries.length){empty.style.display='block';wrap.style.display='none';counter.textContent='—';return;}
   empty.style.display='none'; wrap.style.display='block'; counter.textContent=entries.length+' 件';
-  document.getElementById('entryList').innerHTML = entries.map((e,i) => `
+  document.getElementById('entryList').innerHTML=entries.map((e,i)=>`
     <div class="entry-card" id="ec-${e.id}">
       <div class="entry-top">
         <span class="entry-no">${String(i+1).padStart(2,'0')}</span>
         <button class="label-pill ${e.label}" onclick="toggleLabel(${e.id})">${e.label}</button>
-        ${e.time ? `<span style="font-size:10px;color:var(--dim);margin-left:2px">${e.time}</span>` : ''}
+        ${e.time?`<span style="font-size:10px;color:var(--dim);margin-left:2px">${e.time}</span>`:''}
         <button class="del-btn" onclick="delEntry(${e.id})">✕</button>
       </div>
       <textarea class="entry-ta" rows="3" oninput="updateField(${e.id},'text',this.value)" placeholder="逐語録">${esc(e.text)}</textarea>
@@ -763,94 +696,72 @@ function renderEntries() {
       <textarea class="entry-ta adv" rows="2" oninput="updateField(${e.id},'advice',this.value)" placeholder="アドバイス">${esc(e.advice)}</textarea>
     </div>
   `).join('');
-  const sel = document.getElementById('corrFrom');
-  sel.innerHTML = '<option value="">番号を選択</option>' +
-    entries.map((e,i) => `<option value="${i}">${String(i+1).padStart(2,'0')} (${e.label}): ${e.text.slice(0,18)}…</option>`).join('');
+  const sel=document.getElementById('corrFrom');
+  sel.innerHTML='<option value="">番号を選択</option>'+entries.map((e,i)=>`<option value="${i}">${String(i+1).padStart(2,'0')} (${e.label}): ${e.text.slice(0,18)}…</option>`).join('');
 }
 
-function esc(t) { return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function addRow() { entries.push({id:nextId++,label:currentSpeaker||'CC',text:'',notes:'',advice:'',time:''}); renderEntries(); enableBtns(); }
-function toggleLabel(id) { const e=entries.find(e=>e.id===id); if(e){e.label=e.label==='CC'?'CL':'CC'; renderEntries();} }
-function updateField(id,field,val) { const e=entries.find(e=>e.id===id); if(e) e[field]=val; }
-function delEntry(id) { if(!confirm('この行を削除しますか？')) return; entries=entries.filter(e=>e.id!==id); renderEntries(); }
-function enableBtns() { document.getElementById('pdfBtn').disabled=false; document.getElementById('correctBtn').disabled=false; }
+function esc(t){return(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function addRow(){entries.push({id:nextId++,label:currentSpeaker||'CC',text:'',notes:'',advice:'',time:''});renderEntries();enableBtns();}
+function toggleLabel(id){const e=entries.find(e=>e.id===id);if(e){e.label=e.label==='CC'?'CL':'CC';renderEntries();}}
+function updateField(id,field,val){const e=entries.find(e=>e.id===id);if(e)e[field]=val;}
+function delEntry(id){if(!confirm('この行を削除しますか？'))return;entries=entries.filter(e=>e.id!==id);renderEntries();}
+function enableBtns(){document.getElementById('pdfBtn').disabled=false;document.getElementById('correctBtn').disabled=false;}
 
 // ─── Correction ───
-function showCorrection() { document.getElementById('corrBar').classList.add('show'); }
-function hideCorrection() { document.getElementById('corrBar').classList.remove('show'); }
-function applyCorrection() {
+function showCorrection(){document.getElementById('corrBar').classList.add('show');}
+function hideCorrection(){document.getElementById('corrBar').classList.remove('show');}
+function applyCorrection(){
   const from=parseInt(document.getElementById('corrFrom').value);
   if(isNaN(from)){toast('番号を選択してください');return;}
   for(let i=from;i<entries.length;i++) entries[i].label=entries[i].label==='CC'?'CL':'CC';
-  renderEntries(); hideCorrection(); toast((from+1)+'番目以降のラベルを入れ替えました ✓');
+  renderEntries();hideCorrection();toast((from+1)+'番目以降のラベルを入れ替えました ✓');
 }
 
 // ─── Memo ───
-function toggleMemo() {
-  document.getElementById('memoBody').classList.toggle('open');
-  document.getElementById('memoToggle').classList.toggle('open');
-}
+function toggleMemo(){document.getElementById('memoBody').classList.toggle('open');document.getElementById('memoToggle').classList.toggle('open');}
 
 // ─── Status ───
-function setStatus(type,text) {
+function setStatus(type,text){
   document.getElementById('statusBar').className='status'+(type?' '+type:'');
   document.getElementById('statusTxt').textContent=text;
 }
 
-// ─── PDF（印刷） ───
-function downloadPdf() {
-  const ccN = document.getElementById('ccName').value || 'CC';
-  const clN = document.getElementById('clName').value || 'CL';
-  const tbody = document.getElementById('pt-body');
-  tbody.innerHTML = entries.map((e,i) => {
-    const lc = e.label==='CC' ? '#2d7a5e' : '#5a4a8e';
-    const name = e.label==='CC' ? ccN : clN;
+// ─── PDF ───
+function downloadPdf(){
+  const ccN=document.getElementById('ccName').value||'CC', clN=document.getElementById('clName').value||'CL';
+  document.getElementById('pt-body').innerHTML=entries.map((e,i)=>{
+    const lc=e.label==='CC'?'#2d7a5e':'#5a4a8e', name=e.label==='CC'?ccN:clN;
     return '<tr style="page-break-inside:avoid">'
-      + '<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;color:#888;font-size:10px">'+String(i+1).padStart(2,'0')+'</td>'
-      + '<td style="border:1px solid #ccc;padding:4px 5px;text-align:center"><span style="display:inline-block;background:'+lc+';color:#fff;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:3px">'+e.label+'</span><br><span style="font-size:9px;color:#666">'+name+'</span></td>'
-      + '<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;font-size:10px;color:#888">'+(e.time||'—')+'</td>'
-      + '<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6">'+(e.text||'').replace(/</g,'&lt;')+'</td>'
-      + '<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#444">'+(e.notes||'').replace(/</g,'&lt;')+'</td>'
-      + '<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#8a5510">'+(e.advice||'').replace(/</g,'&lt;')+'</td>'
-      + '</tr>';
+      +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;color:#888;font-size:10px">'+String(i+1).padStart(2,'0')+'</td>'
+      +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center"><span style="display:inline-block;background:'+lc+';color:#fff;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:3px">'+e.label+'</span><br><span style="font-size:9px;color:#666">'+name+'</span></td>'
+      +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;font-size:10px;color:#888">'+(e.time||'—')+'</td>'
+      +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6">'+(e.text||'').replace(/</g,'&lt;')+'</td>'
+      +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#444">'+(e.notes||'').replace(/</g,'&lt;')+'</td>'
+      +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#8a5510">'+(e.advice||'').replace(/</g,'&lt;')+'</td>'
+      +'</tr>';
   }).join('');
-  const pt = document.getElementById('print-table');
-  pt.style.display = 'block';
-  document.getElementById('memoBody').classList.add('open');
-  document.getElementById('memoToggle').classList.add('open');
-  window.onafterprint = () => { pt.style.display = 'none'; };
-  requestAnimationFrame(() => { requestAnimationFrame(() => { window.print(); }); });
+  const pt=document.getElementById('print-table'); pt.style.display='block';
+  document.getElementById('memoBody').classList.add('open'); document.getElementById('memoToggle').classList.add('open');
+  window.onafterprint=()=>{pt.style.display='none';};
+  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
 }
 
 // ─── Audio ───
-function toggleAudio() {
-  const audio = document.getElementById('audioEl');
-  const btn = document.getElementById('audioPlayBtn');
-  if (audio.paused) {
-    audio.play(); btn.textContent = '■ 再生停止'; btn.className = 'btn btn-danger';
-    audio.onended = () => { btn.textContent = '▶ 再生'; btn.className = 'btn'; };
-  } else {
-    audio.pause(); audio.currentTime = 0;
-    btn.textContent = '▶ 再生'; btn.className = 'btn';
-  }
+function toggleAudio(){
+  const audio=document.getElementById('audioEl'), btn=document.getElementById('audioPlayBtn');
+  if(audio.paused){audio.play();btn.textContent='■ 再生停止';btn.className='btn btn-danger';audio.onended=()=>{btn.textContent='▶ 再生';btn.className='btn';};}
+  else{audio.pause();audio.currentTime=0;btn.textContent='▶ 再生';btn.className='btn';}
 }
-
-function downloadAudio() {
-  if (!audioBlob) { toast('録音データがありません'); return; }
-  const date = document.getElementById('sessionDate').value || 'recording';
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(audioBlob);
-  a.download = '録音_' + date.replace(/-/g,'') + '.webm';
-  a.click();
-  toast('録音データをダウンロードしました');
+function downloadAudio(){
+  if(!audioBlob){toast('録音データがありません');return;}
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(audioBlob);
+  a.download='録音_'+(document.getElementById('sessionDate').value||'recording').replace(/-/g,'')+'.webm';
+  a.click(); toast('録音データをダウンロードしました');
 }
 
 // ─── Toast ───
-function toast(msg) {
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2800);
-}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 </script>
 </body>
 </html>
