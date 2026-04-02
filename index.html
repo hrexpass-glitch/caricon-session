@@ -334,8 +334,9 @@ let timerSecondsLeft = TIMER_DURATION;
 let isTimerRunning = false;
 let timerInterval = null;
 let isRecording = false;
+let isPaused = false;
 let mediaRecorder = null;
-// ★ 修正：停止→再開しても音声が欠けないよう全チャンクを蓄積
+let audioStream = null; // ストリームを保持して再開時に使い回す
 let allAudioChunks = [];
 let audioBlob = null;
 let speechRecognition = null;
@@ -383,7 +384,7 @@ function newSession() {
   currentSessionId = 'session_' + Date.now();
   entries = []; nextId = 1; audioBlob = null; allAudioChunks = [];
   resetTimerFull();
-  stopRec();
+  finalizeRec();
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('sessionDate').value = today;
   document.getElementById('sessionTitle').value = today + 'の面談';
@@ -450,7 +451,7 @@ function saveSession() {
 }
 
 function backToList() {
-  if (isRecording || isTimerRunning) stopAll();
+  if (isRecording || isTimerRunning || isPaused) { finalizeRec(); if (isTimerRunning) { clearInterval(timerInterval); isTimerRunning = false; } }
   showPage('page-list');
   renderSessionList();
 }
@@ -526,7 +527,7 @@ function resetTimerFull() {
 function onTimerEnd() {
   beep();
   document.getElementById('timerModal').classList.add('show');
-  if (isRecording) stopRec();
+  if (isRecording) finalizeRec();
   setStatus('done','タイマー終了');
   const btn = document.getElementById('startBtn');
   btn.textContent = '▶ スタート';
@@ -552,17 +553,17 @@ function beep() {
 }
 
 // ─── Recording ───
-// ★ 修正：stopRec後もallAudioChunksは保持し、再開時に追記する
+// ★ 根本修正：ストリームを維持したままpause/resumeする
 async function startRec() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
+    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    allAudioChunks = [];
+    mediaRecorder = new MediaRecorder(audioStream);
     mediaRecorder.ondataavailable = e => {
-      if (e.data.size > 0) allAudioChunks.push(e.data); // 全チャンクに追記
+      if (e.data.size > 0) allAudioChunks.push(e.data);
     };
     mediaRecorder.onstop = () => {
-      stream.getTracks().forEach(t => t.stop());
-      // 全チャンクを結合してblobを作成 → 停止→再開しても音声が繋がる
+      // ストリームは止めない（一時停止のため）
       audioBlob = new Blob(allAudioChunks, { type: 'audio/webm' });
       const url = URL.createObjectURL(audioBlob);
       document.getElementById('audioEl').src = url;
@@ -570,6 +571,7 @@ async function startRec() {
     };
     mediaRecorder.start(1000);
     isRecording = true;
+    isPaused = false;
     startSpeechRecognition();
     return true;
   } catch(e) {
@@ -578,47 +580,96 @@ async function startRec() {
   }
 }
 
-function stopRec() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-  isRecording = false;
+function pauseRec() {
+  // MediaRecorderをpauseして音声チャンクの収集を一時停止
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.pause();
+  }
+  isPaused = true;
   if (speechRecognition) { try { speechRecognition.stop(); } catch(e) {} speechRecognition = null; }
   document.getElementById('liveText').classList.remove('show');
 }
 
+function resumeRec() {
+  // 同じMediaRecorderをresumeして続きを録音
+  if (mediaRecorder && mediaRecorder.state === 'paused') {
+    mediaRecorder.resume();
+  }
+  isPaused = false;
+  startSpeechRecognition();
+}
+
+function finalizeRec() {
+  // 完全終了（リセット時のみ）
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; }
+  isRecording = false; isPaused = false;
+  if (speechRecognition) { try { speechRecognition.stop(); } catch(e) {} speechRecognition = null; }
+  document.getElementById('liveText').classList.remove('show');
+}
+
+// 後方互換のためstopRecは完全終了として残す
+function stopRec() { finalizeRec(); }
+
 function toggleStart() {
-  if (isTimerRunning || isRecording) {
-    stopAll();
-  } else {
+  if (!isRecording && !isTimerRunning) {
+    // 初回スタート
     startBoth();
+  } else if (isRecording && !isPaused) {
+    // 録音中 → 一時停止
+    pauseBoth();
+  } else if (isPaused) {
+    // 一時停止中 → 再開
+    resumeBoth();
   }
 }
 
 async function startBoth() {
-  if (isTimerRunning || isRecording) return;
   currentSpeaker = 'CC';
   updateSpeakerBar();
   const ok = await startRec();
   startCountdown();
   const btn = document.getElementById('startBtn');
-  btn.textContent = '■ 停止';
+  btn.textContent = '⏸ 一時停止';
   btn.className = 'btn btn-full btn-stop';
   btn.style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
-  if (ok) {
-    setStatus('rec','録音中 + タイマー動作中');
-  } else {
-    setStatus('timer','タイマー動作中（マイク未使用）');
-  }
+  setStatus('rec', ok ? '録音中 + タイマー動作中' : 'タイマー動作中（マイク未使用）');
+}
+
+function pauseBoth() {
+  pauseRec();
+  // タイマーも一時停止
+  clearInterval(timerInterval);
+  isTimerRunning = false;
+  const btn = document.getElementById('startBtn');
+  btn.textContent = '▶ 再開';
+  btn.className = 'btn btn-full btn-primary';
+  btn.style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
+  updateTimerUI();
+  setStatus('', '一時停止中');
+  toast('一時停止しました');
+}
+
+function resumeBoth() {
+  resumeRec();
+  startCountdown();
+  const btn = document.getElementById('startBtn');
+  btn.textContent = '⏸ 一時停止';
+  btn.className = 'btn btn-full btn-stop';
+  btn.style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
+  setStatus('rec', '録音中 + タイマー動作中');
+  toast('再開しました');
 }
 
 function stopAll() {
-  if (isRecording) stopRec();
+  finalizeRec();
   if (isTimerRunning) { clearInterval(timerInterval); isTimerRunning = false; }
   const btn = document.getElementById('startBtn');
   btn.textContent = '▶ スタート';
   btn.className = 'btn btn-full btn-primary';
   btn.style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
   updateTimerUI();
-  setStatus('done','停止しました');
+  setStatus('done', '停止しました');
 }
 
 // ─── Speaker ───
