@@ -2,1201 +2,798 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>面談記録メーカー｜キャリコン ロープレ</title>
-<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500;700&family=Shippori+Mincho+B1:wght@400;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>面談記録メーカー</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #0f0f14;
-  --surface: #17171f;
-  --surface2: #1e1e28;
-  --border: rgba(255,255,255,0.07);
-  --border2: rgba(255,255,255,0.12);
-  --text: #e8e6f0;
-  --text-muted: #7a7890;
-  --text-dim: #4a4860;
-  --cc: #7eb8a4;
-  --cc-bg: rgba(126,184,164,0.1);
-  --cc-border: rgba(126,184,164,0.3);
-  --cl: #a89bce;
-  --cl-bg: rgba(168,155,206,0.1);
-  --cl-border: rgba(168,155,206,0.3);
-  --accent: #e8c07d;
-  --accent-dim: rgba(232,192,125,0.15);
-  --red: #e07d7d;
-  --red-dim: rgba(224,125,125,0.12);
-  --green: #7eb8a4;
-  --radius: 8px;
+:root{
+  --bg:#f7f7f5;--surface:#fff;--surface2:#f2f2f0;
+  --border:#e8e8e4;--border2:#d4d4cc;
+  --text:#1a1a18;--muted:#6b6b64;--dim:#aaa9a0;
+  --cc:#2d7a5e;--cc-bg:#edf7f3;--cc-bd:#a8d8c5;
+  --cl:#5a4a8e;--cl-bg:#f3f0fa;--cl-bd:#c4b8e8;
+  --ac:#c9892a;--ac-lt:#fdf3e3;--ac-bd:#e8c07d;
+  --red:#b84a4a;--red-bg:#fdf1f1;--red-bd:#e8a0a0;
+  --r:10px;--sh:0 2px 8px rgba(0,0,0,.07);
 }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:14px;-webkit-font-smoothing:antialiased}
+.page{display:none;min-height:100vh;padding-bottom:40px}
+.page.active{display:block}
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--sh)}
+.hdr-title{font-family:'Noto Serif JP',serif;font-size:17px;font-weight:600}
+.hdr-sub{font-size:9px;letter-spacing:.3em;color:var(--ac);text-transform:uppercase;margin-bottom:1px}
+.hdr-back{background:none;border:none;color:var(--ac);font-size:14px;cursor:pointer;padding:4px 8px;font-family:'Noto Sans JP',sans-serif}
+.hdr-btn{background:var(--ac);border:none;color:#fff;font-size:12px;font-weight:700;cursor:pointer;padding:7px 14px;border-radius:6px;font-family:'Noto Sans JP',sans-serif}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin:12px;box-shadow:var(--sh)}
+.sec-lbl{font-size:9px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase;margin-bottom:12px;font-weight:600}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:500}
+.field input,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'Noto Sans JP',sans-serif;font-size:14px;color:var(--text);outline:none}
+.field input:focus,.field textarea:focus{border-color:var(--ac-bd)}
+.field textarea{resize:vertical;min-height:60px;line-height:1.7}
+.btn{padding:11px 14px;border-radius:var(--r);border:1px solid var(--border2);background:var(--surface);color:var(--muted);font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s}
+.btn:active{opacity:.65}
+.btn:disabled{opacity:.3;cursor:not-allowed}
+.btn-primary{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn-danger{background:var(--red-bg);border-color:var(--red-bd);color:var(--red)}
+.btn-stop{background:#fff0f0;border-color:var(--red-bd);color:var(--red);font-weight:700}
+.btn-full{width:100%}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.timer-num{text-align:center;font-size:52px;font-variant-numeric:tabular-nums;letter-spacing:2px;color:var(--dim);padding:6px 0;font-family:'Noto Serif JP',serif;transition:color .3s}
+.timer-num.active{color:var(--ac)}
+.timer-num.warning{color:var(--red);animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.45}}
+.timer-bar-bg{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:4px 0 6px}
+.timer-bar{height:100%;background:var(--ac);border-radius:2px;transition:width 1s linear,background .3s}
+.timer-bar.warning{background:var(--red)}
+.timer-lbl{text-align:center;font-size:10px;color:var(--dim);letter-spacing:.08em;margin-bottom:14px}
+.status{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border-radius:8px;margin-top:8px;border:1px solid var(--border);font-size:12px;color:var(--muted)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--border2);flex-shrink:0}
+.status.rec .status-dot{background:var(--red);animation:dp 1s infinite}
+.status.timer .status-dot{background:var(--ac);animation:dp 1s infinite}
+.status.done .status-dot{background:var(--cc)}
+@keyframes dp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
+.speaker-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:2px solid var(--border2);margin-top:10px;background:var(--surface2);transition:all .2s}
+.speaker-bar.is-cc{background:var(--cc-bg);border-color:var(--cc-bd)}
+.speaker-bar.is-cl{background:var(--cl-bg);border-color:var(--cl-bd)}
+.speaker-label{font-size:12px;color:var(--muted);flex:1}
+.speaker-name{font-size:14px;font-weight:700}
+.speaker-name.cc{color:var(--cc)}
+.speaker-name.cl{color:var(--cl)}
+.switch-btn{padding:7px 14px;border-radius:6px;border:1px solid;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:transparent}
+.switch-btn.to-cl{border-color:var(--cl-bd);color:var(--cl);background:var(--cl-bg)}
+.switch-btn.to-cc{border-color:var(--cc-bd);color:var(--cc);background:var(--cc-bg)}
+.switch-btn:active{opacity:.7}
+.live-text{margin-top:8px;padding:8px 12px;background:var(--ac-lt);border:1px solid var(--ac-bd);border-radius:6px;font-size:12px;color:var(--muted);font-style:italic;display:none}
+.live-text.show{display:block}
+.action-btn{width:100%;padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:'Noto Sans JP',sans-serif;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;margin-bottom:7px;transition:background .15s;box-shadow:var(--sh)}
+.action-btn:active{background:var(--surface2)}
+.action-btn:disabled{opacity:.3;cursor:not-allowed}
+.session-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin:10px 12px;box-shadow:var(--sh);cursor:pointer;transition:background .15s}
+.session-item:active{background:var(--surface2)}
+.session-item.bookmarked{border-color:var(--ac-bd);background:var(--ac-lt)}
+.session-item-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.session-title{font-size:14px;font-weight:700;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.session-bookmark{background:none;border:none;font-size:18px;cursor:pointer;padding:2px 4px;flex-shrink:0;line-height:1}
+.session-del{background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;padding:2px 6px;flex-shrink:0}
+.session-meta{font-size:11px;color:var(--muted);margin-bottom:3px}
+.session-note{font-size:11px;color:var(--dim);margin-top:4px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.session-count{font-size:11px;color:var(--dim)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--dim)}
+.empty-icon{font-size:36px;margin-bottom:12px;opacity:.35}
+.empty-text{font-size:13px;line-height:1.9}
+.fab{position:fixed;bottom:24px;right:20px;background:var(--ac);color:#fff;border:none;border-radius:50px;padding:14px 22px;font-size:15px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(201,137,42,.4);z-index:40;display:flex;align-items:center;gap:8px}
+.fab:active{opacity:.8}
+.transcript-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.transcript-title{font-family:'Noto Serif JP',serif;font-size:16px;font-weight:600}
+.count-badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--dim)}
+.entry-card{border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;background:var(--surface)}
+.entry-card:nth-child(even){background:#f8f8f6}
+.entry-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.entry-no{font-size:11px;color:var(--dim);font-weight:700;width:22px;flex-shrink:0}
+.label-pill{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.1em;cursor:pointer;border:1px solid;flex-shrink:0}
+.label-pill.CC{background:var(--cc-bg);border-color:var(--cc-bd);color:var(--cc)}
+.label-pill.CL{background:var(--cl-bg);border-color:var(--cl-bd);color:var(--cl)}
+.del-btn{background:none;border:none;color:var(--dim);font-size:16px;cursor:pointer;padding:3px 6px;margin-left:auto;border-radius:4px}
+.del-btn:active{color:var(--red)}
+.entry-ta{width:100%;background:transparent;border:none;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:13px;line-height:1.8;resize:none;outline:none;min-height:48px}
+.entry-ta.sub{color:var(--muted);font-size:12px}
+.entry-ta.adv{color:#8a5510;font-size:12px}
+.entry-div{height:1px;background:var(--border);margin:6px 0}
+.entry-sublbl{font-size:9px;letter-spacing:.2em;color:var(--dim);margin-bottom:3px;text-transform:uppercase}
+.add-row-btn{width:100%;padding:10px;border-radius:8px;border:1px dashed var(--border2);background:transparent;color:var(--dim);font-family:'Noto Sans JP',sans-serif;font-size:12px;cursor:pointer;margin-top:6px}
+.add-row-btn:active{background:var(--ac-lt);color:var(--ac)}
+.memo-hdr{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.memo-hdr-txt{font-size:13px;font-weight:600}
+.memo-toggle{font-size:11px;color:var(--dim);transition:transform .2s}
+.memo-toggle.open{transform:rotate(180deg)}
+.memo-body{display:none;margin-top:12px}
+.memo-body.open{display:block}
+.memo-ta{width:100%;min-height:90px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 13px;font-family:'Noto Sans JP',sans-serif;font-size:13px;color:var(--text);resize:vertical;outline:none;line-height:1.75}
+.memo-ta:focus{border-color:var(--ac-bd)}
+.corr-bar{background:var(--ac-lt);border:1px solid var(--ac-bd);border-radius:var(--r);padding:12px 14px;margin:0 12px;display:none;gap:10px;align-items:center;flex-wrap:wrap}
+.corr-bar.show{display:flex}
+.corr-txt{font-size:12px;color:var(--ac);flex:1;min-width:180px}
+select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-radius:6px;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 10px;outline:none;flex:1;min-width:120px}
+.corr-apply{padding:7px 14px;border-radius:6px;background:var(--ac);border:none;color:#fff;font-family:'Noto Sans JP',sans-serif;font-size:12px;cursor:pointer;font-weight:600}
+.corr-close{background:none;border:none;color:var(--dim);cursor:pointer;font-size:16px;padding:0 4px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--text);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;opacity:0;transition:all .28s;pointer-events:none;z-index:200;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(247,247,245,.93);z-index:150;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.modal-ov.show{display:flex}
+.modal-box{background:var(--surface);border-radius:16px;padding:28px;width:100%;max-width:340px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,.1)}
+.modal-big{font-size:56px;text-align:center;color:var(--ac);font-family:'Noto Serif JP',serif;margin-bottom:8px}
+.modal-msg{font-size:14px;text-align:center;color:var(--muted);letter-spacing:.08em;margin-bottom:20px}
+.audio-player{margin-top:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;display:none}
+.audio-player.show{display:block}
+.audio-player audio{width:100%;margin-top:4px}
+.audio-label{font-size:11px;color:var(--muted);margin-bottom:4px}
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Zen Kaku Gothic New', sans-serif;
-  min-height: 100vh;
-  font-size: 14px;
-}
-
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-.app {
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  min-height: 100vh;
-}
-
-/* ─── Sidebar ─── */
-.sidebar {
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  padding: 28px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
-}
-
-.logo { display: flex; flex-direction: column; gap: 4px; }
-.logo-sub { font-size: 9px; letter-spacing: 0.3em; color: var(--accent); text-transform: uppercase; }
-.logo-title { font-family: 'Shippori Mincho B1', serif; font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: 0.05em; }
-
-.divider { height: 1px; background: var(--border); }
-.section-label { font-size: 9px; letter-spacing: 0.3em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 10px; }
-
-.meta-field { margin-bottom: 12px; }
-.meta-field label { display: block; font-size: 10px; color: var(--text-muted); margin-bottom: 5px; letter-spacing: 0.1em; }
-.meta-field input {
-  width: 100%; background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 6px; padding: 8px 10px; font-family: 'Zen Kaku Gothic New', sans-serif;
-  font-size: 13px; color: var(--text); outline: none; transition: border-color 0.2s;
-}
-.meta-field input:focus { border-color: var(--accent); }
-.meta-field input::placeholder { color: var(--text-dim); }
-
-/* ─── Timer ─── */
-.timer-section { display: flex; flex-direction: column; gap: 10px; }
-
-.timer-display {
-  text-align: center;
-  font-size: 32px;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-  font-family: 'Shippori Mincho B1', serif;
-  padding: 8px 0;
-  transition: color 0.3s;
-}
-.timer-display.active { color: var(--accent); }
-.timer-display.warning { color: var(--red); animation: timerPulse 1s infinite; }
-@keyframes timerPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
-
-.timer-progress-wrap {
-  height: 3px;
-  background: var(--border);
-  border-radius: 2px;
-  overflow: hidden;
-}
-.timer-progress-bar {
-  height: 100%;
-  background: var(--accent);
-  border-radius: 2px;
-  transition: width 1s linear, background 0.3s;
-  width: 100%;
-}
-.timer-progress-bar.warning { background: var(--red); }
-
-.timer-label {
-  text-align: center;
-  font-size: 10px;
-  color: var(--text-dim);
-  letter-spacing: 0.1em;
-}
-
-/* ─── Control Buttons ─── */
-.btn-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.btn-grid-full { grid-column: 1 / -1; }
-
-.ctrl-btn {
-  padding: 11px 8px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border2);
-  background: transparent;
-  color: var(--text-muted);
-  font-family: 'Zen Kaku Gothic New', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.2s;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-}
-.ctrl-btn:hover:not(:disabled) { background: var(--surface2); border-color: var(--border2); color: var(--text); }
-.ctrl-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-.ctrl-btn.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #1a1200;
-  font-weight: 700;
-}
-.ctrl-btn.primary:hover:not(:disabled) { background: #f0cd8e; }
-
-.ctrl-btn.danger {
-  background: var(--red-dim);
-  border-color: var(--red);
-  color: var(--red);
-}
-.ctrl-btn.danger:hover:not(:disabled) { background: rgba(224,125,125,0.2); }
-
-.ctrl-btn.both {
-  background: linear-gradient(135deg, rgba(126,184,164,0.15), rgba(232,192,125,0.15));
-  border-color: rgba(232,192,125,0.4);
-  color: var(--accent);
-  font-weight: 700;
-}
-.ctrl-btn.both:hover:not(:disabled) { background: linear-gradient(135deg, rgba(126,184,164,0.25), rgba(232,192,125,0.25)); }
-
-.rec-indicator {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--text-dim);
-  padding: 6px 10px;
-  background: var(--surface2);
-  border-radius: 6px;
-  border: 1px solid var(--border);
-}
-.rec-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--text-dim);
-  flex-shrink: 0;
-}
-.rec-indicator.recording-active .rec-dot {
-  background: var(--red);
-  animation: pulse 1s infinite;
-}
-.rec-indicator.timer-active .rec-dot { background: var(--accent); animation: pulse 1s infinite; }
-.rec-indicator.both-active .rec-dot { background: var(--green); animation: pulse 1s infinite; }
-@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
-
-/* ─── Live transcript preview ─── */
-.live-text {
-  font-size: 11px;
-  color: var(--text-muted);
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px 10px;
-  min-height: 40px;
-  line-height: 1.6;
-  font-style: italic;
-  display: none;
-}
-.live-text.show { display: block; }
-
-/* ─── Action buttons ─── */
-.action-group { display: flex; flex-direction: column; gap: 7px; margin-top: auto; }
-.action-btn {
-  width: 100%; padding: 9px 12px; border-radius: 6px;
-  border: 1px solid var(--border); background: transparent;
-  color: var(--text-muted); font-family: 'Zen Kaku Gothic New', sans-serif;
-  font-size: 12px; cursor: pointer; transition: all 0.2s;
-  display: flex; align-items: center; gap: 8px; letter-spacing: 0.03em;
-}
-.action-btn:hover:not(:disabled) { background: var(--surface2); color: var(--text); border-color: var(--border2); }
-.action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-/* ─── Main ─── */
-.main {
-  padding: 32px 36px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.status-bar {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 16px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: var(--radius);
-  font-size: 12px; color: var(--text-muted);
-}
-.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
-.status-bar.recording-active .status-dot { background: var(--red); animation: pulse 1s infinite; }
-.status-bar.done .status-dot { background: var(--cc); }
-.status-bar.timer-active .status-dot { background: var(--accent); animation: pulse 1s infinite; }
-
-/* correction banner */
-.correction-banner {
-  background: var(--accent-dim); border: 1px solid rgba(232,192,125,0.25);
-  border-radius: var(--radius); padding: 14px 18px; display: none;
-  gap: 12px; align-items: center; flex-wrap: wrap;
-}
-.correction-banner.show { display: flex; }
-.correction-banner-text { font-size: 12px; color: var(--accent); flex: 1; min-width: 200px; }
-.correction-banner-text strong { font-weight: 700; }
-.correction-select {
-  background: var(--surface2); border: 1px solid rgba(232,192,125,0.3);
-  border-radius: 6px; color: var(--text); font-family: 'Zen Kaku Gothic New', sans-serif;
-  font-size: 12px; padding: 6px 10px; outline: none; cursor: pointer;
-}
-.correction-apply {
-  padding: 7px 16px; border-radius: 6px; border: 1px solid var(--accent);
-  background: var(--accent-dim); color: var(--accent); font-family: 'Zen Kaku Gothic New', sans-serif;
-  font-size: 12px; cursor: pointer; transition: all 0.2s;
-}
-.correction-apply:hover { background: rgba(232,192,125,0.25); }
-.correction-close { background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 16px; }
-
-/* ─── Table View (メインの逐語録テーブル) ─── */
-.transcript-header {
-  display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;
-}
-.transcript-title { font-family: 'Shippori Mincho B1', serif; font-size: 16px; font-weight: 600; letter-spacing: 0.05em; }
-.entry-counter { font-size: 11px; color: var(--text-dim); }
-
-.transcript-empty { text-align: center; padding: 80px 20px; color: var(--text-dim); }
-.transcript-empty-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.4; }
-.transcript-empty-text { font-size: 13px; line-height: 1.8; }
-
-/* Table layout */
-.record-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.record-table th {
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  padding: 8px 10px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  letter-spacing: 0.08em;
-  text-align: center;
-  white-space: nowrap;
-}
-.record-table td {
-  border: 1px solid var(--border);
-  padding: 10px 10px;
-  vertical-align: top;
-  background: var(--surface);
-}
-.record-table tr:hover td { background: var(--surface2); }
-
-.col-no { width: 44px; text-align: center; color: var(--text-dim); font-size: 12px; }
-.col-transcript { min-width: 200px; }
-.col-notes { min-width: 160px; }
-.col-advice { min-width: 120px; }
-.col-del { width: 36px; text-align: center; }
-
-.cell-editable {
-  width: 100%;
-  min-height: 48px;
-  background: transparent;
-  border: none;
-  color: var(--text);
-  font-family: 'Zen Kaku Gothic New', sans-serif;
-  font-size: 13px;
-  line-height: 1.75;
-  resize: none;
-  outline: none;
-  cursor: text;
-  display: block;
-  padding: 0;
-}
-.cell-editable:focus {
-  background: rgba(255,255,255,0.03);
-  border-radius: 3px;
-  padding: 2px 4px;
-  margin: -2px -4px;
-}
-.cell-editable::placeholder { color: var(--text-dim); }
-
-.transcript-cell-wrap { display: flex; flex-direction: column; gap: 6px; }
-
-.label-btn {
-  display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
-  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
-  cursor: pointer; border: 1px solid; transition: all 0.15s;
-  white-space: nowrap; width: fit-content;
-}
-.label-btn.CC { background: var(--cc-bg); border-color: var(--cc-border); color: var(--cc); }
-.label-btn.CC:hover { background: rgba(126,184,164,0.2); }
-.label-btn.CL { background: var(--cl-bg); border-color: var(--cl-border); color: var(--cl); }
-.label-btn.CL:hover { background: rgba(168,155,206,0.2); }
-
-.del-btn {
-  background: transparent; border: none; color: var(--text-dim);
-  cursor: pointer; font-size: 14px; padding: 3px; border-radius: 4px;
-  transition: all 0.15s; line-height: 1;
-}
-.del-btn:hover { background: var(--surface2); color: var(--red); }
-
-/* add row btn */
-.add-row-btn {
-  margin-top: 12px;
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: 1px dashed var(--border2);
-  background: transparent;
-  color: var(--text-dim);
-  font-family: 'Zen Kaku Gothic New', sans-serif;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.add-row-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
-
-/* memo section */
-.memo-section {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); overflow: hidden;
-}
-.memo-header {
-  padding: 12px 18px; display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s;
-}
-.memo-header:hover { background: var(--surface2); }
-.memo-header-left { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; letter-spacing: 0.05em; }
-.memo-toggle { color: var(--text-dim); font-size: 12px; transition: transform 0.2s; }
-.memo-toggle.open { transform: rotate(180deg); }
-.memo-body { padding: 16px 18px; display: none; }
-.memo-body.open { display: block; }
-.memo-textarea {
-  width: 100%; min-height: 100px; background: var(--surface2);
-  border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px;
-  font-family: 'Zen Kaku Gothic New', sans-serif; font-size: 13px; color: var(--text);
-  resize: vertical; outline: none; line-height: 1.7; transition: border-color 0.2s;
-}
-.memo-textarea:focus { border-color: var(--border2); }
-.memo-textarea::placeholder { color: var(--text-dim); }
-
-/* loading */
-.loading-overlay {
-  display: none; position: fixed; inset: 0; background: rgba(15,15,20,0.85);
-  backdrop-filter: blur(4px); z-index: 100; flex-direction: column;
-  align-items: center; justify-content: center; gap: 20px;
-}
-.loading-overlay.show { display: flex; }
-.loading-spinner { width: 40px; height: 40px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.loading-text { font-size: 14px; color: var(--text-muted); letter-spacing: 0.1em; }
-
-/* toast */
-.toast {
-  position: fixed; bottom: 32px; right: 32px; background: var(--surface2);
-  border: 1px solid var(--border2); border-radius: var(--radius); padding: 12px 18px;
-  font-size: 13px; color: var(--text); z-index: 200; opacity: 0;
-  transform: translateY(8px); transition: all 0.3s; pointer-events: none;
-}
-.toast.show { opacity: 1; transform: none; }
-
-/* countdown modal */
-.countdown-modal {
-  display: none; position: fixed; inset: 0; background: rgba(15,15,20,0.9);
-  backdrop-filter: blur(8px); z-index: 150; flex-direction: column;
-  align-items: center; justify-content: center; gap: 16px;
-}
-.countdown-modal.show { display: flex; }
-.countdown-big { font-family: 'Shippori Mincho B1', serif; font-size: 72px; color: var(--accent); }
-.countdown-msg { font-size: 16px; color: var(--text-muted); letter-spacing: 0.1em; }
-
-@media (max-width: 800px) {
-  .app { grid-template-columns: 1fr; }
-  .sidebar { position: static; height: auto; }
-  .main { padding: 20px 16px; }
-  .record-table th, .record-table td { padding: 7px 6px; font-size: 12px; }
-  .col-notes, .col-advice { min-width: 90px; }
+@media print {
+  .hdr-back,.hdr-btn,.fab,#card-timer,#card-actions,
+  .corr-bar,.add-row-btn,.speaker-bar,.live-text,.status,
+  .del-btn,.count-badge,#card-transcript,.audio-player{display:none!important;}
+  body{font-size:11px!important;background:#fff!important;}
+  .page{display:block!important;padding:0!important;}
+  #page-list{display:none!important;}
+  #page-session{display:block!important;}
+  .hdr{position:static!important;box-shadow:none!important;padding:6px 12px!important;border-bottom:2px solid #333!important;}
+  #card-info{border:none!important;box-shadow:none!important;margin:0!important;padding:4px 12px!important;}
+  #card-info .field{display:inline-block;margin-right:20px;margin-bottom:2px!important;}
+  #card-info .field label{font-size:9px!important;}
+  #card-info .field input{border:none!important;background:transparent!important;padding:0!important;font-size:11px!important;font-weight:600;}
+  #card-memo{border:none!important;box-shadow:none!important;margin:0!important;padding:4px 12px!important;}
+  .memo-body{display:block!important;}
+  .memo-ta{border:1px solid #ccc!important;background:#fffdf5!important;font-size:10px!important;min-height:auto!important;}
+  #print-table{display:block!important;}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
 }
 </style>
 </head>
 <body>
-<div class="app">
 
-  <!-- ─── Sidebar ─── -->
-  <aside class="sidebar">
-    <div class="logo">
-      <span class="logo-sub">Career Counseling</span>
-      <span class="logo-title">面談記録メーカー</span>
-    </div>
-
-    <div class="divider"></div>
-
+<!-- PAGE: 一覧 -->
+<div class="page active" id="page-list">
+  <div class="hdr">
     <div>
-      <div class="section-label">セッション情報</div>
-      <div class="meta-field">
-        <label>実施日</label>
-        <input type="date" id="sessionDate">
-      </div>
-      <div class="meta-field">
-        <label>CC（キャリアコンサルタント）</label>
-        <input type="text" id="ccName" placeholder="氏名を入力">
-      </div>
-      <div class="meta-field">
-        <label>CL（クライアント）</label>
-        <input type="text" id="clName" placeholder="氏名 or イニシャル">
+      <div class="hdr-sub">Career Counseling</div>
+      <div class="hdr-title">面談記録</div>
+    </div>
+  </div>
+  <div id="session-list-wrap"></div>
+  <button class="fab" onclick="newSession()">＋ 新しい面談</button>
+</div>
+
+<!-- PAGE: セッション -->
+<div class="page" id="page-session">
+  <div class="hdr">
+    <button class="hdr-back" onclick="backToList()">← 一覧</button>
+    <div style="text-align:center">
+      <div class="hdr-sub">Session</div>
+      <div class="hdr-title" id="session-hdr-title">新しい面談</div>
+    </div>
+    <button class="hdr-btn" onclick="saveSession()">保存</button>
+  </div>
+
+  <div class="card" id="card-info">
+    <div class="sec-lbl">セッション情報</div>
+    <div class="field"><label>面談タイトル</label><input type="text" id="sessionTitle" placeholder="例：2026-03-15の面談"></div>
+    <div class="field"><label>実施日</label><input type="date" id="sessionDate"></div>
+    <div class="field"><label>CC（キャリアコンサルタント）</label><input type="text" id="ccName" placeholder="氏名を入力"></div>
+    <div class="field"><label>CL（クライアント）</label><input type="text" id="clName" placeholder="氏名 or イニシャル"></div>
+    <div class="field"><label>メモ</label><textarea id="sessionNote" placeholder="この面談についての簡単なメモ…"></textarea></div>
+  </div>
+
+  <div class="card" id="card-timer">
+    <div class="sec-lbl">タイマー &amp; 録音</div>
+
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn" style="flex:1;font-weight:700;font-size:14px;line-height:1.4" onclick="setTimer(15)">⏱ 15分<br><span style="font-size:9px;font-weight:400;opacity:.7">国キャリ</span></button>
+      <button class="btn" style="flex:1;font-weight:700;font-size:14px;line-height:1.4" onclick="setTimer(30)">⏱ 30分<br><span style="font-size:9px;font-weight:400;opacity:.7">1級・2級</span></button>
+    </div>
+
+    <div class="field" style="margin-bottom:10px">
+      <label>カスタム時間（分）</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <!-- ★ max 30分に変更 -->
+        <input type="range" id="timerRange" min="1" max="30" value="15" oninput="onRangeChange(this.value)" style="flex:1;accent-color:var(--ac)">
+        <span id="timerRangeVal" style="font-size:16px;font-weight:700;color:var(--ac);min-width:40px;text-align:right">15分</span>
       </div>
     </div>
 
-    <div class="divider"></div>
+    <div class="timer-num" id="timerDisplay">15:00</div>
+    <div class="timer-bar-bg"><div class="timer-bar" id="timerBar" style="width:100%"></div></div>
+    <div class="timer-lbl" id="timerLbl">15分カウントダウン</div>
 
-    <div>
-      <div class="section-label">タイマー &amp; 録音</div>
+    <button class="btn btn-full btn-primary" id="startBtn" onclick="toggleStart()" style="margin-bottom:8px;font-size:15px;padding:14px">▶ スタート</button>
 
-      <div class="timer-section">
-        <div class="timer-display" id="timerDisplay">15:00</div>
-        <div class="timer-progress-wrap">
-          <div class="timer-progress-bar" id="timerBar"></div>
-        </div>
-        <div class="timer-label" id="timerLabel">15分カウントダウン</div>
-      </div>
-
-      <!-- プリセットボタン -->
-      <div style="height:8px"></div>
-      <div class="btn-grid">
-        <button class="ctrl-btn" id="preset15Btn" onclick="setPreset(15)">⏱ 15分 国キャリ</button>
-        <button class="ctrl-btn" id="preset30Btn" onclick="setPreset(30)">⏱ 30分 1級・2級</button>
-      </div>
-
-      <!-- カスタムスライダー -->
-      <div style="height:8px"></div>
-      <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;letter-spacing:0.08em;">カスタム時間（分）</div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <input type="range" id="timerSlider" min="1" max="30" value="15"
-          style="flex:1;accent-color:var(--accent);cursor:pointer;"
-          oninput="onSliderChange(this.value)">
-        <span id="sliderVal" style="font-size:13px;color:var(--accent);font-weight:700;min-width:28px;text-align:right;">15分</span>
-      </div>
-
-      <div style="height:12px"></div>
-
-      <!-- スタート／停止ボタン -->
-      <button class="ctrl-btn both" id="startBtn" onclick="startAll()" style="width:100%;padding:14px;">▶ スタート（タイマー＋録音＋文字起こし）</button>
-      <div style="height:8px"></div>
-      <button class="ctrl-btn danger" id="stopBtn" onclick="stopAll()" disabled style="width:100%;padding:14px;">■ 停止</button>
-
-      <div style="height:10px"></div>
-      <div class="rec-indicator" id="recIndicator">
-        <span class="rec-dot"></span>
-        <span id="recIndicatorText">待機中</span>
-      </div>
-
-      <div style="height:8px"></div>
-      <div class="live-text" id="liveText"></div>
+    <div class="speaker-bar" id="speakerBar" style="margin-bottom:8px">
+      <div class="speaker-label">現在の発言者</div>
+      <div class="speaker-name cc" id="speakerName">CC</div>
+      <button class="switch-btn to-cl" id="switchBtn" onclick="switchSpeaker()">CLに切替</button>
     </div>
 
-    <div class="divider"></div>
+    <button class="btn btn-full" id="resetBtn" onclick="resetTimerFull()" style="margin-bottom:0">↺ リセット</button>
 
-    <div class="action-group">
-      <button class="action-btn" id="correctBtn" onclick="showCorrection()" disabled>
-        ⇄ ラベルずれを一括訂正
-      </button>
-      <button class="action-btn" onclick="addRow()">
-        ＋ 行を追加
-      </button>
-      <button class="action-btn" id="pdfBtn" onclick="downloadPdf()" disabled>
-        ↓ PDF出力（面談記録）
-      </button>
-      <button class="action-btn" id="txtBtn" onclick="downloadTxt()" disabled>
-        ↓ テキストDL (.txt)
-      </button>
-    </div>
-  </aside>
-
-  <!-- ─── Main ─── -->
-  <main class="main">
-
-    <div class="status-bar" id="statusBar">
+    <div class="status" id="statusBar">
       <span class="status-dot"></span>
-      <span id="statusText">タイマーまたは録音を開始してください</span>
+      <span id="statusTxt">タイマーまたは録音を開始してください</span>
     </div>
 
-    <!-- correction banner -->
-    <div class="correction-banner" id="correctionBanner">
-      <div class="correction-banner-text">
-        <strong>ラベル一括訂正：</strong> 何番目以降のCC↔CLが入れ替わっていますか？
-      </div>
-      <select class="correction-select" id="correctionFrom">
-        <option value="">番号を選択</option>
-      </select>
-      <button class="correction-apply" onclick="applyCorrection()">訂正する</button>
-      <button class="correction-close" onclick="hideCorrection()">✕</button>
-    </div>
+    <div class="live-text" id="liveText"></div>
 
-    <!-- Transcript Table -->
-    <div>
-      <div class="transcript-header">
-        <span class="transcript-title">逐語録</span>
-        <span class="entry-counter" id="entryCounter">—</span>
-      </div>
-
-      <div id="emptyState" class="transcript-empty">
-        <div class="transcript-empty-icon">🎙</div>
-        <div class="transcript-empty-text">
-          録音すると逐語録が自動で入力されます<br>
-          手動で行を追加することもできます
-        </div>
-      </div>
-
-      <div id="tableWrap" style="display:none;">
-        <table class="record-table">
-          <thead>
-            <tr>
-              <th class="col-no">番号</th>
-              <th class="col-transcript">逐語録</th>
-              <th class="col-notes">気づき・改善案・新案</th>
-              <th class="col-advice">アドバイス</th>
-              <th class="col-del"></th>
-            </tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-        <button class="add-row-btn" onclick="addRow()">＋ 行を追加</button>
+    <!-- 録音再生 -->
+    <div class="audio-player" id="audioPlayer">
+      <div class="audio-label">🎧 録音データ</div>
+      <audio id="audioEl" controls style="width:100%;margin-bottom:8px"></audio>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="btn" id="audioPlayBtn" onclick="toggleAudio()" style="font-size:12px;padding:8px">▶ 再生</button>
+        <button class="btn" onclick="downloadAudio()" style="font-size:12px;padding:8px">↓ ダウンロード</button>
       </div>
     </div>
+  </div>
 
-    <!-- Memo -->
-    <div class="memo-section">
-      <div class="memo-header" onclick="toggleMemo()">
-        <div class="memo-header-left">📝 <span>総合メモ・フィードバック</span></div>
-        <span class="memo-toggle" id="memoToggle">▼</span>
-      </div>
-      <div class="memo-body" id="memoBody">
-        <textarea class="memo-textarea" id="memoText"
-          placeholder="全体を通じての気づき、改善点、良かった点などを記録…"></textarea>
-      </div>
+  <div class="card" id="card-actions">
+    <div class="sec-lbl">操作</div>
+    <button class="action-btn" id="correctBtn" onclick="showCorrection()" disabled>⇄ ラベルずれを一括訂正</button>
+    <button class="action-btn" onclick="addRow()">＋ 行を手動追加</button>
+    <button class="action-btn" id="pdfBtn" onclick="downloadPdf()" disabled>↓ PDF出力</button>
+  </div>
+
+  <div class="corr-bar" id="corrBar">
+    <div class="corr-txt"><strong>一括訂正：</strong>何番目以降が入れ替わっていますか？</div>
+    <select class="corr-sel" id="corrFrom"><option value="">番号を選択</option></select>
+    <button class="corr-apply" onclick="applyCorrection()">訂正</button>
+    <button class="corr-close" onclick="hideCorrection()">✕</button>
+  </div>
+
+  <div class="card" id="card-transcript">
+    <div class="transcript-hdr">
+      <span class="transcript-title">逐語録</span>
+      <span class="count-badge" id="entryCounter">—</span>
     </div>
+    <div id="emptyState" class="empty-state">
+      <div class="empty-icon">🎙</div>
+      <div class="empty-text">録音すると逐語録が自動で入力されます<br>手動で行を追加することもできます</div>
+    </div>
+    <div id="tableWrap" style="display:none">
+      <div id="entryList"></div>
+      <button class="add-row-btn" onclick="addRow()">＋ 行を追加</button>
+    </div>
+  </div>
 
-  </main>
+<!-- 印刷用テーブル -->
+<div id="print-table" style="display:none;padding:0 12px">
+  <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:8px">
+    <thead>
+      <tr style="background:#f2f2f0">
+        <th style="border:1px solid #ccc;padding:5px;width:28px;text-align:center">番号</th>
+        <th style="border:1px solid #ccc;padding:5px;width:36px;text-align:center">話者</th>
+        <th style="border:1px solid #ccc;padding:5px;width:36px;text-align:center">時刻</th>
+        <th style="border:1px solid #ccc;padding:5px">逐語録</th>
+        <th style="border:1px solid #ccc;padding:5px;width:25%">気づき・改善案・新案</th>
+        <th style="border:1px solid #ccc;padding:5px;width:18%">アドバイス</th>
+      </tr>
+    </thead>
+    <tbody id="pt-body"></tbody>
+  </table>
 </div>
 
-<!-- Loading overlay -->
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-spinner"></div>
-  <div class="loading-text" id="loadingText">文字起こし処理中…</div>
+  <div class="card" id="card-memo">
+    <div class="memo-hdr" onclick="toggleMemo()">
+      <span class="memo-hdr-txt">📝 総合メモ・フィードバック</span>
+      <span class="memo-toggle" id="memoToggle">▼</span>
+    </div>
+    <div class="memo-body" id="memoBody">
+      <textarea class="memo-ta" id="memoText" placeholder="全体を通じての気づき、改善点、良かった点などを記録…"></textarea>
+    </div>
+  </div>
 </div>
 
-<!-- Countdown modal -->
-<div class="countdown-modal" id="countdownModal">
-  <div class="countdown-big" id="countdownNum">時間終了</div>
-  <div class="countdown-msg">15分が経過しました</div>
-  <button class="ctrl-btn primary" style="margin-top:12px;padding:12px 32px;" onclick="dismissCountdown()">閉じる</button>
+<!-- Timer end modal -->
+<div class="modal-ov" id="timerModal">
+  <div class="modal-box">
+    <div class="modal-big">⏰</div>
+    <div class="modal-msg">時間が経過しました</div>
+    <button class="btn btn-primary btn-full" onclick="dismissModal()">閉じる</button>
+  </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── State ───
-let mediaRecorder = null;
-let allAudioChunks = []; // 全セッション通じてチャンクを蓄積
-let isRecording = false;
-let timerInterval = null;
-let timerCountdown = null;
-let elapsedSeconds = 0;
-let TIMER_DURATION = 15 * 60; // デフォルト15分、変更可能
+const STORAGE_KEY = 'caricon_sessions_v3';
+
+(function migrate() {
+  try {
+    const oldKeys = ['caricon_sessions_v2', 'caricon_sessions_v1', 'caricon_sessions'];
+    oldKeys.forEach(key => {
+      const old = localStorage.getItem(key);
+      if (!old) return;
+      const oldData = JSON.parse(old);
+      if (!oldData || oldData.length === 0) return;
+      const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      const currentIds = current.map(s => s.id);
+      const merged = [...current, ...oldData.filter(s => !currentIds.includes(s.id))];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      localStorage.removeItem(key);
+    });
+  } catch(e) {}
+})();
+
+function loadSessions() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; } }
+function saveSessions(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+
+let sessions = loadSessions();
+let currentSessionId = null;
+let entries = [];
+let nextId = 1;
+let TIMER_DURATION = 15 * 60;
 let timerSecondsLeft = TIMER_DURATION;
 let isTimerRunning = false;
+let timerInterval = null;
+let isRecording = false;
+let mediaRecorder = null;
+// ★ 修正：停止→再開しても音声が欠けないよう全チャンクを蓄積
+let allAudioChunks = [];
 let audioBlob = null;
-let entries = []; // {id, label, text, notes, advice}
-let nextId = 1;
 let speechRecognition = null;
-let liveBuffer = '';
+let currentSpeaker = 'CC';
 
-// ─── Init ───
 document.getElementById('sessionDate').value = new Date().toISOString().split('T')[0];
-updateTimerDisplay(TIMER_DURATION);
+renderSessionList();
 
-// ─── Preset & Slider ───
-function setPreset(mins) {
-  if (isTimerRunning) return;
-  TIMER_DURATION = mins * 60;
-  timerSecondsLeft = TIMER_DURATION;
-  document.getElementById('timerSlider').value = mins;
-  document.getElementById('sliderVal').textContent = mins + '分';
-  updateTimerDisplay(TIMER_DURATION);
-  showToast(`タイマーを${mins}分にセットしました`);
+// ─── Session List ───
+function renderSessionList() {
+  const wrap = document.getElementById('session-list-wrap');
+  if (sessions.length === 0) {
+    wrap.innerHTML = '<div class="empty-state" style="padding-top:80px"><div class="empty-icon">📋</div><div class="empty-text">面談記録がまだありません<br>「＋ 新しい面談」から始めましょう</div></div>';
+    return;
+  }
+  const sorted = [...sessions].sort((a,b) => {
+    if (a.bookmarked && !b.bookmarked) return -1;
+    if (!a.bookmarked && b.bookmarked) return 1;
+    return (b.savedAt||0) - (a.savedAt||0);
+  });
+  wrap.innerHTML = sorted.map(s => `
+    <div class="session-item${s.bookmarked?' bookmarked':''}" onclick="openSession('${s.id}')">
+      <div class="session-item-top">
+        <span class="session-title">${s.title || s.date+'の面談' || '無題の面談'}</span>
+        <button class="session-bookmark" onclick="event.stopPropagation();toggleBookmark('${s.id}')" title="ブックマーク">${s.bookmarked?'★':'☆'}</button>
+        <button class="session-del" onclick="event.stopPropagation();deleteSession('${s.id}')">🗑</button>
+      </div>
+      <div class="session-meta">📅 ${s.date||'日付未設定'} ／ CC: ${s.ccName||'未設定'} ／ CL: ${s.clName||'未設定'}</div>
+      <div class="session-count">${s.entries?s.entries.length:0} 件の発言</div>
+      ${s.note ? `<div class="session-note">📝 ${s.note}</div>` : ''}
+    </div>
+  `).join('');
 }
 
-function onSliderChange(val) {
-  if (isTimerRunning) return;
-  const mins = parseInt(val);
-  TIMER_DURATION = mins * 60;
-  timerSecondsLeft = TIMER_DURATION;
-  document.getElementById('sliderVal').textContent = mins + '分';
-  updateTimerDisplay(TIMER_DURATION);
+function toggleBookmark(id) {
+  const s = sessions.find(x => x.id === id);
+  if (!s) return;
+  s.bookmarked = !s.bookmarked;
+  saveSessions(sessions);
+  renderSessionList();
+  toast(s.bookmarked ? '★ ブックマークしました' : 'ブックマークを解除しました');
+}
+
+function newSession() {
+  currentSessionId = 'session_' + Date.now();
+  entries = []; nextId = 1; audioBlob = null; allAudioChunks = [];
+  resetTimerFull();
+  stopRec();
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('sessionDate').value = today;
+  document.getElementById('sessionTitle').value = today + 'の面談';
+  document.getElementById('ccName').value = '';
+  document.getElementById('clName').value = '';
+  document.getElementById('sessionNote').value = '';
+  document.getElementById('memoText').value = '';
+  document.getElementById('session-hdr-title').textContent = today + 'の面談';
+  document.getElementById('audioPlayer').classList.remove('show');
+  currentSpeaker = 'CC';
+  updateSpeakerBar();
+  renderEntries();
+  showPage('page-session');
+}
+
+function openSession(id) {
+  const s = sessions.find(x => x.id === id);
+  if (!s) return;
+  currentSessionId = id;
+  entries = (s.entries||[]).map(e=>({...e}));
+  nextId = entries.length > 0 ? Math.max(...entries.map(e=>e.id))+1 : 1;
+  audioBlob = null; allAudioChunks = [];
+  document.getElementById('sessionTitle').value = s.title || '';
+  document.getElementById('sessionDate').value = s.date || '';
+  document.getElementById('ccName').value = s.ccName || '';
+  document.getElementById('clName').value = s.clName || '';
+  document.getElementById('sessionNote').value = s.note || '';
+  document.getElementById('memoText').value = s.memo || '';
+  document.getElementById('session-hdr-title').textContent = s.title || s.date || '面談記録';
+  document.getElementById('audioPlayer').classList.remove('show');
+  resetTimerFull();
+  renderEntries();
+  if (entries.length > 0) enableBtns();
+  showPage('page-session');
+}
+
+function deleteSession(id) {
+  if (!confirm('この面談記録を削除しますか？')) return;
+  sessions = sessions.filter(s => s.id !== id);
+  saveSessions(sessions);
+  renderSessionList();
+  toast('削除しました');
+}
+
+function saveSession() {
+  const title = document.getElementById('sessionTitle').value || document.getElementById('sessionDate').value + 'の面談';
+  const date = document.getElementById('sessionDate').value;
+  const ccName = document.getElementById('ccName').value;
+  const clName = document.getElementById('clName').value;
+  const note = document.getElementById('sessionNote').value;
+  const memo = document.getElementById('memoText').value;
+  const existing = sessions.find(s => s.id === currentSessionId);
+  const data = {
+    id: currentSessionId, title, date, ccName, clName, note, memo,
+    entries: entries.map(e=>({...e})),
+    bookmarked: existing ? existing.bookmarked : false,
+    savedAt: Date.now()
+  };
+  const idx = sessions.findIndex(s => s.id === currentSessionId);
+  if (idx >= 0) sessions[idx] = data; else sessions.push(data);
+  saveSessions(sessions);
+  document.getElementById('session-hdr-title').textContent = title;
+  toast('保存しました ✓');
+}
+
+function backToList() {
+  if (isRecording || isTimerRunning) stopAll();
+  showPage('page-list');
+  renderSessionList();
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
 }
 
 // ─── Timer ───
-function formatTime(s) {
-  const m = Math.floor(s / 60).toString().padStart(2,'0');
-  const sec = (s % 60).toString().padStart(2,'0');
-  return `${m}:${sec}`;
+function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).toString().padStart(2,'0'); }
+
+function setTimer(min) {
+  if (isTimerRunning) return;
+  TIMER_DURATION = min * 60;
+  timerSecondsLeft = TIMER_DURATION;
+  document.getElementById('timerRange').value = Math.min(min, 30);
+  document.getElementById('timerRangeVal').textContent = min + '分';
+  updateTimerUI();
+  toast(min + '分にセットしました');
 }
 
-function updateTimerDisplay(secsLeft) {
-  const disp = document.getElementById('timerDisplay');
+function onRangeChange(val) {
+  if (isTimerRunning) return;
+  TIMER_DURATION = parseInt(val) * 60;
+  timerSecondsLeft = TIMER_DURATION;
+  document.getElementById('timerRangeVal').textContent = val + '分';
+  updateTimerUI();
+}
+
+function updateTimerUI() {
+  const d = document.getElementById('timerDisplay');
   const bar = document.getElementById('timerBar');
-  const label = document.getElementById('timerLabel');
-
-  disp.textContent = formatTime(secsLeft);
-  const pct = (secsLeft / TIMER_DURATION) * 100;
-  bar.style.width = pct + '%';
-
-  if (secsLeft <= 60) {
-    disp.className = 'timer-display active warning';
-    bar.className = 'timer-progress-bar warning';
-    label.textContent = '残り ' + secsLeft + '秒';
+  const lbl = document.getElementById('timerLbl');
+  bar.style.width = (timerSecondsLeft / TIMER_DURATION * 100) + '%';
+  d.textContent = fmt(timerSecondsLeft);
+  if (timerSecondsLeft <= 60 && isTimerRunning) {
+    d.className='timer-num warning'; bar.className='timer-bar warning';
+    lbl.textContent = '残り ' + timerSecondsLeft + '秒';
   } else if (isTimerRunning) {
-    disp.className = 'timer-display active';
-    bar.className = 'timer-progress-bar';
-    label.textContent = '残り ' + formatTime(secsLeft);
+    d.className='timer-num active'; bar.className='timer-bar';
+    lbl.textContent = '残り ' + fmt(timerSecondsLeft);
   } else {
-    disp.className = 'timer-display';
-    bar.className = 'timer-progress-bar';
-    label.textContent = '15分カウントダウン';
+    d.className='timer-num'; bar.className='timer-bar';
+    lbl.textContent = timerSecondsLeft === TIMER_DURATION ? (TIMER_DURATION/60)+'分カウントダウン' : '一時停止中 — '+fmt(timerSecondsLeft);
   }
 }
 
 function startCountdown() {
   if (isTimerRunning) return;
   isTimerRunning = true;
-  timerSecondsLeft = TIMER_DURATION;
-
-  timerCountdown = setInterval(() => {
+  timerInterval = setInterval(() => {
     timerSecondsLeft--;
-    updateTimerDisplay(timerSecondsLeft);
-    if (timerSecondsLeft <= 0) {
-      clearInterval(timerCountdown);
-      isTimerRunning = false;
-      onTimerEnd();
-    }
+    updateTimerUI();
+    if (timerSecondsLeft <= 0) { clearInterval(timerInterval); isTimerRunning = false; onTimerEnd(); }
   }, 1000);
+  setStatus('timer','タイマー動作中 — '+fmt(timerSecondsLeft));
+  updateTimerUI();
 }
 
-function stopCountdown() {
-  if (timerCountdown) clearInterval(timerCountdown);
+function resetTimerFull() {
+  clearInterval(timerInterval);
   isTimerRunning = false;
   timerSecondsLeft = TIMER_DURATION;
-  updateTimerDisplay(TIMER_DURATION);
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('startBtn').textContent = '▶ スタート';
+  document.getElementById('startBtn').className = 'btn btn-full btn-primary';
+  document.getElementById('startBtn').style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
+  updateTimerUI();
 }
 
 function onTimerEnd() {
-  document.getElementById('countdownModal').classList.add('show');
-  if (isRecording) stopRecording();
-  setStatus('done', 'タイマー終了 — 15分経過しました');
+  beep();
+  document.getElementById('timerModal').classList.add('show');
+  if (isRecording) stopRec();
+  setStatus('done','タイマー終了');
+  const btn = document.getElementById('startBtn');
+  btn.textContent = '▶ スタート';
+  btn.className = 'btn btn-full btn-primary';
+  btn.style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
+  saveSession();
+  toast('タイマー終了 — 自動保存しました ✓');
 }
 
-function dismissCountdown() {
-  document.getElementById('countdownModal').classList.remove('show');
+function dismissModal() { document.getElementById('timerModal').classList.remove('show'); }
+
+function beep() {
+  try {
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+1.0);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime+1.0);
+  } catch(e) {}
 }
 
 // ─── Recording ───
-async function startRecording() {
+// ★ 修正：stopRec後もallAudioChunksは保持し、再開時に追記する
+async function startRec() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaRecorder = new MediaRecorder(stream);
-    // 新規セッションの場合のみチャンクをリセット（再開時は蓄積）
-    const sessionChunks = [];
-
     mediaRecorder.ondataavailable = e => {
-      if (e.data.size > 0) {
-        sessionChunks.push(e.data);
-        allAudioChunks.push(e.data); // 全体にも蓄積
-      }
+      if (e.data.size > 0) allAudioChunks.push(e.data); // 全チャンクに追記
     };
     mediaRecorder.onstop = () => {
-      // 全チャンクを結合してblobを作成
-      audioBlob = new Blob(allAudioChunks, { type: 'audio/webm' });
       stream.getTracks().forEach(t => t.stop());
-      processRecording();
+      // 全チャンクを結合してblobを作成 → 停止→再開しても音声が繋がる
+      audioBlob = new Blob(allAudioChunks, { type: 'audio/webm' });
+      const url = URL.createObjectURL(audioBlob);
+      document.getElementById('audioEl').src = url;
+      document.getElementById('audioPlayer').classList.add('show');
     };
-
     mediaRecorder.start(1000);
     isRecording = true;
-
-    // Start Web Speech API for live transcription
     startSpeechRecognition();
-
-    document.getElementById('pdfBtn').disabled = false;
-    document.getElementById('txtBtn').disabled = false;
-
+    return true;
   } catch(e) {
-    showToast('マイクへのアクセスが許可されていません');
+    toast('マイクへのアクセスが許可されていません');
     return false;
   }
-  return true;
 }
 
-function stopRecording() {
+function stopRec() {
   if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
   isRecording = false;
-  if (speechRecognition) {
-    try { speechRecognition.stop(); } catch(e) {}
-    speechRecognition = null;
-  }
+  if (speechRecognition) { try { speechRecognition.stop(); } catch(e) {} speechRecognition = null; }
   document.getElementById('liveText').classList.remove('show');
 }
 
-// ─── Speech Recognition ───
+function toggleStart() {
+  if (isTimerRunning || isRecording) {
+    stopAll();
+  } else {
+    startBoth();
+  }
+}
+
+async function startBoth() {
+  if (isTimerRunning || isRecording) return;
+  currentSpeaker = 'CC';
+  updateSpeakerBar();
+  const ok = await startRec();
+  startCountdown();
+  const btn = document.getElementById('startBtn');
+  btn.textContent = '■ 停止';
+  btn.className = 'btn btn-full btn-stop';
+  btn.style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
+  if (ok) {
+    setStatus('rec','録音中 + タイマー動作中');
+  } else {
+    setStatus('timer','タイマー動作中（マイク未使用）');
+  }
+}
+
+function stopAll() {
+  if (isRecording) stopRec();
+  if (isTimerRunning) { clearInterval(timerInterval); isTimerRunning = false; }
+  const btn = document.getElementById('startBtn');
+  btn.textContent = '▶ スタート';
+  btn.className = 'btn btn-full btn-primary';
+  btn.style.cssText = 'margin-bottom:8px;font-size:15px;padding:14px';
+  updateTimerUI();
+  setStatus('done','停止しました');
+}
+
+// ─── Speaker ───
+function updateSpeakerBar() {
+  const ccN = document.getElementById('ccName').value || 'CC';
+  const clN = document.getElementById('clName').value || 'CL';
+  const bar = document.getElementById('speakerBar');
+  const nameEl = document.getElementById('speakerName');
+  const btn = document.getElementById('switchBtn');
+  if (currentSpeaker === 'CC') {
+    bar.className='speaker-bar is-cc'; nameEl.className='speaker-name cc';
+    nameEl.textContent='CC（'+ccN+'）'; btn.className='switch-btn to-cl'; btn.textContent='CL に切替';
+  } else {
+    bar.className='speaker-bar is-cl'; nameEl.className='speaker-name cl';
+    nameEl.textContent='CL（'+clN+'）'; btn.className='switch-btn to-cc'; btn.textContent='CC に切替';
+  }
+}
+
+function switchSpeaker() {
+  currentSpeaker = currentSpeaker === 'CC' ? 'CL' : 'CC';
+  updateSpeakerBar();
+  toast(currentSpeaker + ' に切り替えました');
+}
+
+// ─── Speech ───
 function startSpeechRecognition() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return;
-
   speechRecognition = new SR();
   speechRecognition.lang = 'ja-JP';
   speechRecognition.continuous = true;
   speechRecognition.interimResults = true;
-
   const liveEl = document.getElementById('liveText');
   liveEl.classList.add('show');
-
   let finalBuffer = '';
   let silenceTimer = null;
-  let currentLabel = 'CC';
-
   speechRecognition.onresult = (event) => {
-    let interim = '';
-    let final = '';
-    for (let i = event.resultIndex; i < event.results.length; i++) {
+    let interim='', final='';
+    for (let i=event.resultIndex; i<event.results.length; i++) {
       const t = event.results[i][0].transcript;
-      if (event.results[i].isFinal) { final += t; }
-      else { interim += t; }
+      if (event.results[i].isFinal) final += t; else interim += t;
     }
-
     if (interim) liveEl.textContent = '🎤 ' + interim;
-
     if (final.trim()) {
       finalBuffer += final;
       liveEl.textContent = '✓ ' + finalBuffer;
-
-      // Auto-add entry after silence
       clearTimeout(silenceTimer);
       silenceTimer = setTimeout(() => {
         if (finalBuffer.trim()) {
-          const ts = formatTime(TIMER_DURATION - timerSecondsLeft);
-          addEntryFromRecording(currentLabel, finalBuffer.trim(), ts);
-          // Alternate labels (heuristic)
-          currentLabel = currentLabel === 'CC' ? 'CL' : 'CC';
-          finalBuffer = '';
-          liveEl.textContent = '';
+          const elapsed = TIMER_DURATION - timerSecondsLeft;
+          const mm = Math.floor(elapsed/60).toString().padStart(2,'0');
+          const ss = (elapsed%60).toString().padStart(2,'0');
+          entries.push({ id:nextId++, label:currentSpeaker, text:finalBuffer.trim(), notes:'', advice:'', time:mm+':'+ss });
+          renderEntries(); enableBtns();
+          finalBuffer = ''; liveEl.textContent = '';
         }
       }, 1800);
     }
   };
-
   speechRecognition.onerror = () => {};
-  speechRecognition.onend = () => {
-    // Restart if still recording
-    if (isRecording && speechRecognition) {
-      try { speechRecognition.start(); } catch(e) {}
-    }
-  };
-
+  speechRecognition.onend = () => { if (isRecording) try { speechRecognition.start(); } catch(e) {} };
   try { speechRecognition.start(); } catch(e) {}
 }
 
-function addEntryFromRecording(label, text, ts) {
-  const entry = { id: nextId++, label, text, notes: '', advice: '' };
-  entries.push(entry);
-  renderTable();
-  document.getElementById('pdfBtn').disabled = false;
-  document.getElementById('txtBtn').disabled = false;
-  document.getElementById('correctBtn').disabled = false;
-}
-
-function processRecording() {
-  // If no entries from speech recognition, add demo data
-  if (entries.length === 0) {
-    showLoading(true);
-    document.getElementById('loadingText').textContent = '文字起こし処理中…';
-    setTimeout(() => {
-      const demo = generateDemoTranscript();
-      demo.forEach(d => entries.push({ id: nextId++, label: d.label, text: d.text, notes: '', advice: '' }));
-      renderTable();
-      showLoading(false);
-      document.getElementById('pdfBtn').disabled = false;
-      document.getElementById('txtBtn').disabled = false;
-      document.getElementById('correctBtn').disabled = false;
-      setStatus('done', `文字起こし完了 — ${entries.length}件の発言`);
-      showToast('文字起こしが完了しました ✦');
-    }, 1500);
-  } else {
-    setStatus('done', `録音完了 — ${entries.length}件の発言を取得`);
-    showToast('録音が完了しました ✦');
-  }
-}
-
-function generateDemoTranscript() {
-  return [
-    { label: 'CC', text: 'よろしくお願いします。今日はどのようなことをお話しいただけますか？' },
-    { label: 'CL', text: 'ええと…最近、仕事のことでずっとモヤモヤしていて。転職するべきか、迷っているんです。' },
-    { label: 'CC', text: 'そうですか。転職を考えていらっしゃるんですね。具体的には、どんなことがお気持ちの中にありますか？' },
-    { label: 'CL', text: '今の会社、もう6年いるんですけど、なんか…成長してる実感がなくて。毎日同じことの繰り返しというか。' },
-    { label: 'CC', text: '6年間ずっと続けてこられたんですね。成長の実感がないと感じはじめたのは、いつ頃からでしょうか？' },
-    { label: 'CL', text: '去年くらいからかな。後輩が入ってきて、自分がちゃんと教えられてるのかも不安で。' },
-  ];
-}
-
-// ─── Button Actions ───
-async function startAll() {
-  if (isTimerRunning || isRecording) return;
-  const ok = await startRecording();
-  if (!ok) return;
-  startCountdown();
-  setIndicator('both-active', '録音 ＋ タイマー ＋ 文字起こし 動作中');
-  document.getElementById('startBtn').disabled = true;
-  document.getElementById('preset15Btn').disabled = true;
-  document.getElementById('preset30Btn').disabled = true;
-  document.getElementById('timerSlider').disabled = true;
-  document.getElementById('stopBtn').disabled = false;
-  setStatus('recording-active', '録音中 ＋ タイマー動作中 ＋ 文字起こし中');
-  showToast('スタート！タイマー＋録音＋文字起こし ⏱🎤');
-}
-
-function stopAll() {
-  if (isRecording) stopRecording();
-  if (isTimerRunning) stopCountdown();
-  allAudioChunks = [];
-  setIndicator('', '停止済み');
-  document.getElementById('startBtn').disabled = false;
-  document.getElementById('preset15Btn').disabled = false;
-  document.getElementById('preset30Btn').disabled = false;
-  document.getElementById('timerSlider').disabled = false;
-  document.getElementById('stopBtn').disabled = true;
-  setStatus('done', '停止しました');
-  showToast('停止しました');
-}
-
-function setIndicator(cls, text) {
-  const ind = document.getElementById('recIndicator');
-  ind.className = 'rec-indicator' + (cls ? ' ' + cls : '');
-  document.getElementById('recIndicatorText').textContent = text;
-}
-
-// ─── Table render ───
-function renderTable() {
+// ─── Entries ───
+function renderEntries() {
   const empty = document.getElementById('emptyState');
   const wrap = document.getElementById('tableWrap');
   const counter = document.getElementById('entryCounter');
-
-  if (entries.length === 0) {
-    empty.style.display = 'block';
-    wrap.style.display = 'none';
-    counter.textContent = '—';
-    return;
-  }
-
-  empty.style.display = 'none';
-  wrap.style.display = 'block';
-  counter.textContent = `${entries.length} 件`;
-
-  const tbody = document.getElementById('tableBody');
-  tbody.innerHTML = entries.map((e, i) => `
-    <tr id="row-${e.id}">
-      <td class="col-no">${String(i+1).padStart(2,'0')}</td>
-      <td class="col-transcript">
-        <div class="transcript-cell-wrap">
-          <button class="label-btn ${e.label}" onclick="toggleLabel(${e.id})">${e.label}</button>
-          <textarea class="cell-editable" rows="3"
-            onchange="updateField(${e.id},'text',this.value)"
-            placeholder="逐語録（自動入力）">${escHtml(e.text)}</textarea>
-        </div>
-      </td>
-      <td class="col-notes">
-        <textarea class="cell-editable" rows="3"
-          onchange="updateField(${e.id},'notes',this.value)"
-          placeholder="気づき・改善案・新案">${escHtml(e.notes)}</textarea>
-      </td>
-      <td class="col-advice">
-        <textarea class="cell-editable" rows="3"
-          onchange="updateField(${e.id},'advice',this.value)"
-          placeholder="アドバイス">${escHtml(e.advice)}</textarea>
-      </td>
-      <td class="col-del"><button class="del-btn" onclick="deleteEntry(${e.id})" title="削除">✕</button></td>
-    </tr>
+  if (entries.length === 0) { empty.style.display='block'; wrap.style.display='none'; counter.textContent='—'; return; }
+  empty.style.display='none'; wrap.style.display='block'; counter.textContent=entries.length+' 件';
+  document.getElementById('entryList').innerHTML = entries.map((e,i) => `
+    <div class="entry-card" id="ec-${e.id}">
+      <div class="entry-top">
+        <span class="entry-no">${String(i+1).padStart(2,'0')}</span>
+        <button class="label-pill ${e.label}" onclick="toggleLabel(${e.id})">${e.label}</button>
+        ${e.time ? `<span style="font-size:10px;color:var(--dim);margin-left:2px">${e.time}</span>` : ''}
+        <button class="del-btn" onclick="delEntry(${e.id})">✕</button>
+      </div>
+      <textarea class="entry-ta" rows="3" oninput="updateField(${e.id},'text',this.value)" placeholder="逐語録">${esc(e.text)}</textarea>
+      <div class="entry-div"></div>
+      <div class="entry-sublbl">気づき・改善案</div>
+      <textarea class="entry-ta sub" rows="2" oninput="updateField(${e.id},'notes',this.value)" placeholder="気づき・改善案・新案">${esc(e.notes)}</textarea>
+      <div class="entry-div"></div>
+      <div class="entry-sublbl">アドバイス</div>
+      <textarea class="entry-ta adv" rows="2" oninput="updateField(${e.id},'advice',this.value)" placeholder="アドバイス">${esc(e.advice)}</textarea>
+    </div>
   `).join('');
-
-  // Correction select
-  const sel = document.getElementById('correctionFrom');
+  const sel = document.getElementById('corrFrom');
   sel.innerHTML = '<option value="">番号を選択</option>' +
-    entries.map((e,i) => `<option value="${i}">${String(i+1).padStart(2,'0')} (${e.label}): ${e.text.slice(0,20)}…</option>`).join('');
+    entries.map((e,i) => `<option value="${i}">${String(i+1).padStart(2,'0')} (${e.label}): ${e.text.slice(0,18)}…</option>`).join('');
 }
 
-function escHtml(t) {
-  return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function addRow() {
-  entries.push({ id: nextId++, label: 'CC', text: '', notes: '', advice: '' });
-  renderTable();
-  document.getElementById('pdfBtn').disabled = false;
-  document.getElementById('txtBtn').disabled = false;
-  document.getElementById('correctBtn').disabled = false;
-}
-
-function toggleLabel(id) {
-  const e = entries.find(e => e.id === id);
-  if (e) { e.label = e.label === 'CC' ? 'CL' : 'CC'; renderTable(); }
-}
-
-function updateField(id, field, val) {
-  const e = entries.find(e => e.id === id);
-  if (e) e[field] = val;
-}
-
-function deleteEntry(id) {
-  entries = entries.filter(e => e.id !== id);
-  renderTable();
-}
+function esc(t) { return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function addRow() { entries.push({id:nextId++,label:currentSpeaker||'CC',text:'',notes:'',advice:'',time:''}); renderEntries(); enableBtns(); }
+function toggleLabel(id) { const e=entries.find(e=>e.id===id); if(e){e.label=e.label==='CC'?'CL':'CC'; renderEntries();} }
+function updateField(id,field,val) { const e=entries.find(e=>e.id===id); if(e) e[field]=val; }
+function delEntry(id) { if(!confirm('この行を削除しますか？')) return; entries=entries.filter(e=>e.id!==id); renderEntries(); }
+function enableBtns() { document.getElementById('pdfBtn').disabled=false; document.getElementById('correctBtn').disabled=false; }
 
 // ─── Correction ───
-function showCorrection() { document.getElementById('correctionBanner').classList.add('show'); }
-function hideCorrection() { document.getElementById('correctionBanner').classList.remove('show'); }
+function showCorrection() { document.getElementById('corrBar').classList.add('show'); }
+function hideCorrection() { document.getElementById('corrBar').classList.remove('show'); }
 function applyCorrection() {
-  const fromIdx = parseInt(document.getElementById('correctionFrom').value);
-  if (isNaN(fromIdx)) { showToast('発言番号を選択してください'); return; }
-  for (let i = fromIdx; i < entries.length; i++) {
-    entries[i].label = entries[i].label === 'CC' ? 'CL' : 'CC';
-  }
-  renderTable();
-  hideCorrection();
-  showToast(`${fromIdx+1}番目以降のラベルを入れ替えました ✓`);
+  const from=parseInt(document.getElementById('corrFrom').value);
+  if(isNaN(from)){toast('番号を選択してください');return;}
+  for(let i=from;i<entries.length;i++) entries[i].label=entries[i].label==='CC'?'CL':'CC';
+  renderEntries(); hideCorrection(); toast((from+1)+'番目以降のラベルを入れ替えました ✓');
 }
 
-// ─── Memo toggle ───
+// ─── Memo ───
 function toggleMemo() {
   document.getElementById('memoBody').classList.toggle('open');
   document.getElementById('memoToggle').classList.toggle('open');
 }
 
-// ─── PDF出力（面談記録フォーマット）───
-async function downloadPdf() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
-
-  const date = document.getElementById('sessionDate').value;
-  const ccName = document.getElementById('ccName').value || 'CC';
-  const clName = document.getElementById('clName').value || 'CL';
-  const memo = document.getElementById('memoText').value;
-
-  const pageW = 297, pageH = 210;
-  const mL = 10, mR = 10, mT = 14, mB = 10;
-  const contentW = pageW - mL - mR;
-  let y = mT;
-
-  // Column widths
-  const colNo = 12;
-  const colTranscript = 90;
-  const colNotes = 80;
-  const colAdvice = contentW - colNo - colTranscript - colNotes;
-
-  function checkPage(needed = 12) {
-    if (y + needed > pageH - mB) {
-      doc.addPage();
-      y = mT;
-      drawTableHeader(y);
-      y += 10;
-    }
-  }
-
-  function drawTableHeader(ty) {
-    doc.setFillColor(40, 40, 55);
-    doc.rect(mL, ty, contentW, 9, 'F');
-    doc.setTextColor(200, 198, 220);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text('NO.', mL + colNo/2, ty + 5.5, { align: 'center' });
-    doc.text('逐語録', mL + colNo + colTranscript/2, ty + 5.5, { align: 'center' });
-    doc.text('気づき・改善案・新案', mL + colNo + colTranscript + colNotes/2, ty + 5.5, { align: 'center' });
-    doc.text('アドバイス', mL + colNo + colTranscript + colNotes + colAdvice/2, ty + 5.5, { align: 'center' });
-
-    // Vertical dividers in header
-    doc.setDrawColor(60, 60, 80);
-    doc.setLineWidth(0.3);
-    [colNo, colNo+colTranscript, colNo+colTranscript+colNotes].forEach(x => {
-      doc.line(mL+x, ty, mL+x, ty+9);
-    });
-  }
-
-  // ── Page 1 Header ──
-  // Title bar
-  doc.setFillColor(20, 20, 30);
-  doc.rect(0, 0, pageW, 12, 'F');
-  doc.setTextColor(232, 192, 125);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text('面談記録', mL, 8);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(160, 155, 180);
-  doc.text(`実施日：${date}`, mL + 35, 8);
-  doc.text(`CC：${ccName}`, mL + 95, 8);
-  doc.text(`CL：${clName}`, mL + 135, 8);
-
-  y = 14;
-  drawTableHeader(y);
-  y += 10;
-
-  // Entries
-  entries.forEach((e, i) => {
-    const ccLine = e.label === 'CC' ? `CC（${ccName}）` : `CL（${clName}）`;
-    const transcriptLines = doc.splitTextToSize((ccLine + '\n' + e.text), colTranscript - 4);
-    const notesLines = doc.splitTextToSize(e.notes || '', colNotes - 4);
-    const adviceLines = doc.splitTextToSize(e.advice || '', colAdvice - 4);
-
-    const rowLines = Math.max(transcriptLines.length, notesLines.length, adviceLines.length, 2);
-    const rowH = rowLines * 4.5 + 5;
-
-    checkPage(rowH);
-
-    const rowY = y;
-
-    // Row background alternating
-    if (i % 2 === 0) {
-      doc.setFillColor(22, 22, 32);
-      doc.rect(mL, rowY, contentW, rowH, 'F');
-    }
-
-    // Borders
-    doc.setDrawColor(50, 50, 65);
-    doc.setLineWidth(0.2);
-    doc.rect(mL, rowY, contentW, rowH, 'S');
-    [colNo, colNo+colTranscript, colNo+colTranscript+colNotes].forEach(x => {
-      doc.line(mL+x, rowY, mL+x, rowY+rowH);
-    });
-
-    // NO
-    doc.setTextColor(100, 95, 130);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text(String(i+1).padStart(2,'0'), mL + colNo/2, rowY + rowH/2 + 1, { align: 'center' });
-
-    // Label badge
-    const labelColor = e.label === 'CC' ? [70,150,120] : [120,100,180];
-    doc.setFillColor(...labelColor);
-    doc.roundedRect(mL + colNo + 2, rowY + 2, 14, 5, 1, 1, 'F');
-    doc.setTextColor(255,255,255);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.text(e.label, mL + colNo + 9, rowY + 5.8, { align: 'center' });
-
-    // Transcript text
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.setTextColor(220, 218, 235);
-    const textLines = doc.splitTextToSize(e.text || '', colTranscript - 6);
-    textLines.forEach((line, li) => {
-      doc.text(line, mL + colNo + 2, rowY + 9 + li * 4.5);
-    });
-
-    // Notes
-    doc.setTextColor(180, 175, 200);
-    notesLines.forEach((line, li) => {
-      doc.text(line, mL + colNo + colTranscript + 2, rowY + 4 + li * 4.5);
-    });
-
-    // Advice
-    doc.setTextColor(232, 192, 125);
-    adviceLines.forEach((line, li) => {
-      doc.text(line, mL + colNo + colTranscript + colNotes + 2, rowY + 4 + li * 4.5);
-    });
-
-    y += rowH;
-  });
-
-  // Memo
-  if (memo.trim()) {
-    y += 6;
-    checkPage(20);
-    doc.setFillColor(25, 25, 38);
-    doc.setDrawColor(80, 75, 110);
-    doc.setLineWidth(0.3);
-    const memoLines = doc.splitTextToSize(memo, contentW - 8);
-    const memoH = memoLines.length * 5 + 12;
-    doc.rect(mL, y, contentW, memoH, 'FD');
-    doc.setTextColor(160, 155, 180);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text('総合メモ・フィードバック', mL + 4, y + 6);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.setTextColor(210, 208, 225);
-    memoLines.forEach((line, li) => {
-      doc.text(line, mL + 4, y + 12 + li * 5);
-    });
-  }
-
-  // Page numbers
-  const pages = doc.internal.getNumberOfPages();
-  for (let p = 1; p <= pages; p++) {
-    doc.setPage(p);
-    doc.setFontSize(8);
-    doc.setTextColor(100, 95, 130);
-    doc.text(`${p} / ${pages}`, pageW - mR, pageH - 4, { align: 'right' });
-  }
-
-  const dateStr = date.replace(/-/g,'');
-  doc.save(`面談記録_${dateStr}.pdf`);
-  showToast('PDFを出力しました ✦');
+// ─── Status ───
+function setStatus(type,text) {
+  document.getElementById('statusBar').className='status'+(type?' '+type:'');
+  document.getElementById('statusTxt').textContent=text;
 }
 
-// ─── Text DL ───
-function downloadTxt() {
-  const date = document.getElementById('sessionDate').value;
-  const ccName = document.getElementById('ccName').value || 'CC';
-  const clName = document.getElementById('clName').value || 'CL';
-  const memo = document.getElementById('memoText').value;
+// ─── PDF（印刷） ───
+function downloadPdf() {
+  const ccN = document.getElementById('ccName').value || 'CC';
+  const clN = document.getElementById('clName').value || 'CL';
+  const tbody = document.getElementById('pt-body');
+  tbody.innerHTML = entries.map((e,i) => {
+    const lc = e.label==='CC' ? '#2d7a5e' : '#5a4a8e';
+    const name = e.label==='CC' ? ccN : clN;
+    return '<tr style="page-break-inside:avoid">'
+      + '<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;color:#888;font-size:10px">'+String(i+1).padStart(2,'0')+'</td>'
+      + '<td style="border:1px solid #ccc;padding:4px 5px;text-align:center"><span style="display:inline-block;background:'+lc+';color:#fff;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:3px">'+e.label+'</span><br><span style="font-size:9px;color:#666">'+name+'</span></td>'
+      + '<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;font-size:10px;color:#888">'+(e.time||'—')+'</td>'
+      + '<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6">'+(e.text||'').replace(/</g,'&lt;')+'</td>'
+      + '<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#444">'+(e.notes||'').replace(/</g,'&lt;')+'</td>'
+      + '<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#8a5510">'+(e.advice||'').replace(/</g,'&lt;')+'</td>'
+      + '</tr>';
+  }).join('');
+  const pt = document.getElementById('print-table');
+  pt.style.display = 'block';
+  document.getElementById('memoBody').classList.add('open');
+  document.getElementById('memoToggle').classList.add('open');
+  window.onafterprint = () => { pt.style.display = 'none'; };
+  requestAnimationFrame(() => { requestAnimationFrame(() => { window.print(); }); });
+}
 
-  let txt = `【面談記録】\n実施日：${date}\nCC：${ccName} ／ CL：${clName}\n${'─'.repeat(60)}\n\n`;
-  txt += `番号\t逐語録\t気づき・改善案・新案\tアドバイス\n${'─'.repeat(60)}\n`;
-  entries.forEach((e, i) => {
-    const speaker = e.label === 'CC' ? `CC（${ccName}）` : `CL（${clName}）`;
-    txt += `${String(i+1).padStart(2,'0')}\t[${speaker}] ${e.text}\t${e.notes}\t${e.advice}\n`;
-  });
-  if (memo.trim()) { txt += `\n${'─'.repeat(60)}\n【総合メモ】\n${memo}\n`; }
+// ─── Audio ───
+function toggleAudio() {
+  const audio = document.getElementById('audioEl');
+  const btn = document.getElementById('audioPlayBtn');
+  if (audio.paused) {
+    audio.play(); btn.textContent = '■ 再生停止'; btn.className = 'btn btn-danger';
+    audio.onended = () => { btn.textContent = '▶ 再生'; btn.className = 'btn'; };
+  } else {
+    audio.pause(); audio.currentTime = 0;
+    btn.textContent = '▶ 再生'; btn.className = 'btn';
+  }
+}
 
-  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+function downloadAudio() {
+  if (!audioBlob) { toast('録音データがありません'); return; }
+  const date = document.getElementById('sessionDate').value || 'recording';
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `面談記録_${date.replace(/-/g,'')}.txt`;
+  a.href = URL.createObjectURL(audioBlob);
+  a.download = '録音_' + date.replace(/-/g,'') + '.webm';
   a.click();
-  showToast('テキストファイルをダウンロードしました');
+  toast('録音データをダウンロードしました');
 }
 
-// ─── Helpers ───
-function setStatus(type, text) {
-  const bar = document.getElementById('statusBar');
-  bar.className = 'status-bar ' + type;
-  document.getElementById('statusText').textContent = text;
-}
-function showLoading(v) { document.getElementById('loadingOverlay').classList.toggle('show', v); }
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+// ─── Toast ───
+function toast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
 }
 </script>
 </body>
