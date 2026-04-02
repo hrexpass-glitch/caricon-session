@@ -188,16 +188,21 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
   <div class="card" id="card-timer">
     <div class="sec-lbl">タイマー &amp; 録音</div>
 
-    <div style="display:flex;gap:8px;margin-bottom:10px">
+    <div style="display:flex;gap:8px;margin-bottom:12px">
       <button class="btn" style="flex:1;font-weight:700;font-size:14px;line-height:1.4" onclick="setTimer(15)">⏱ 15分<br><span style="font-size:9px;font-weight:400;opacity:.7">国キャリ</span></button>
       <button class="btn" style="flex:1;font-weight:700;font-size:14px;line-height:1.4" onclick="setTimer(30)">⏱ 30分<br><span style="font-size:9px;font-weight:400;opacity:.7">1級・2級</span></button>
     </div>
 
-    <div class="field" style="margin-bottom:10px">
-      <label>その他（分を入力）</label>
-      <div style="display:flex;align-items:center;gap:8px">
-        <input type="number" id="timerCustom" min="1" max="120" placeholder="例：20" style="width:80px;text-align:center;font-size:16px;font-weight:700;color:var(--ac)">
-        <button class="btn" onclick="setTimerCustom()" style="font-size:13px;padding:9px 14px">セット</button>
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:11px;color:var(--muted);font-weight:500">カスタム</span>
+        <span id="timerRangeVal" style="font-size:16px;font-weight:700;color:var(--ac)">15分</span>
+      </div>
+      <input type="range" id="timerRange" min="1" max="30" step="1" value="15"
+        oninput="onRangeChange(this.value)"
+        style="width:100%;accent-color:var(--ac);height:6px;cursor:pointer">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px">
+        <span>1分</span><span>|</span><span>10分</span><span>|</span><span>20分</span><span>|</span><span>30分</span>
       </div>
     </div>
 
@@ -474,12 +479,13 @@ function setTimer(min) {
   toast(min + '分にセットしました');
 }
 
-function setTimerCustom() {
+function onRangeChange(val) {
   if (isTimerRunning) return;
-  const val = parseInt(document.getElementById('timerCustom').value);
-  if (!val || val < 1) { toast('1分以上の数字を入力してください'); return; }
-  setTimer(val);
-  document.getElementById('timerCustom').value = '';
+  const mins = parseInt(val);
+  TIMER_DURATION = mins * 60;
+  timerSecondsLeft = TIMER_DURATION;
+  document.getElementById('timerRangeVal').textContent = mins + '分';
+  updateTimerUI();
 }
 
 function updateTimerUI() {
