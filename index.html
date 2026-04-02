@@ -129,16 +129,14 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 .audio-player audio{width:100%;margin-top:4px}
 .audio-label{font-size:11px;color:var(--muted);margin-bottom:4px}
 
-/* ─── スライダー：つまみのズレをCSSで補正 ─── */
+/* ─── スライダー：min=1 max=29 で15が完全中央 ─── */
 input[type=range]#timerRange {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 4px;
-  background: linear-gradient(to right, var(--ac) 50%, var(--border2) 50%);
   border-radius: 2px;
   outline: none;
-  accent-color: var(--ac);
 }
 input[type=range]#timerRange::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -227,7 +225,8 @@ input[type=range]#timerRange::-moz-range-thumb {
     <div class="field" style="margin-bottom:10px">
       <label>カスタム時間（分）</label>
       <div style="display:flex;align-items:center;gap:10px">
-        <input type="range" id="timerRange" min="0" max="30" value="15" oninput="onRangeChange(this.value)" style="flex:1">
+        <!-- ★修正: min="1" max="29" → value=15 がぴったり中央 -->
+        <input type="range" id="timerRange" min="1" max="29" value="15" oninput="onRangeChange(this.value)" style="flex:1">
         <span id="timerRangeVal" style="font-size:16px;font-weight:700;color:var(--ac);min-width:40px;text-align:right">15分</span>
       </div>
     </div>
@@ -364,13 +363,13 @@ let currentSpeaker = 'CC';
 
 document.getElementById('sessionDate').value = new Date().toISOString().split('T')[0];
 
-// スライダーの背景をJS側でも初期化
+// ★修正: min=1, max=29 → (val-1)/(29-1)*100 で正確な塗り分け
 updateSliderBg(15);
 renderSessionList();
 
-// ─── スライダー背景更新（塗り分け）───
+// ─── スライダー背景更新（min=1, max=29 基準）───
 function updateSliderBg(val) {
-  const pct = (val / 30) * 100;
+  const pct = ((val - 1) / (29 - 1)) * 100;  // ★修正箇所
   const el = document.getElementById('timerRange');
   if (el) el.style.background = `linear-gradient(to right, var(--ac) ${pct}%, var(--border2) ${pct}%)`;
 }
@@ -482,19 +481,20 @@ function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).
 function setTimer(min) {
   if (isTimerRunning) return;
   TIMER_DURATION = min*60; timerSecondsLeft = TIMER_DURATION;
-  const capped = Math.min(min, 30);
-  document.getElementById('timerRange').value = capped;
+  // ★修正: 29を超える場合はスライダーを29（右端）に寄せる。15分はvalue=15でぴったり中央
+  const clamped = Math.min(Math.max(min, 1), 29);
+  document.getElementById('timerRange').value = clamped;
   document.getElementById('timerRangeVal').textContent = min+'分';
-  updateSliderBg(capped);
+  updateSliderBg(clamped);
   updateTimerUI(); toast(min+'分にセットしました');
 }
 
 function onRangeChange(val) {
   if (isTimerRunning) return;
-  const mins = Math.max(1, parseInt(val));
+  const mins = parseInt(val);  // min=1なのでMath.maxは不要
   TIMER_DURATION = mins*60; timerSecondsLeft = TIMER_DURATION;
   document.getElementById('timerRangeVal').textContent = mins+'分';
-  updateSliderBg(parseInt(val));
+  updateSliderBg(mins);
   updateTimerUI();
 }
 
