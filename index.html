@@ -795,6 +795,7 @@ function pauseBoth() {
   const btn = document.getElementById('startBtn');
   btn.textContent='▶ 再開'; btn.className='btn btn-full btn-primary';
   btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
+  document.getElementById('endBtn').disabled = false; // 一時停止中も終了できる
   updateTimerUI(); setStatus('','一時停止中'); toast('一時停止しました');
 }
 
@@ -1017,6 +1018,7 @@ function pauseExamBoth(){
   pauseExamRec(); clearInterval(examTimerInterval); isExamTimerRunning=false;
   const btn=document.getElementById('examStartBtn');
   btn.textContent='▶ 再開'; btn.className='btn btn-full btn-primary';
+  document.getElementById('examEndBtn').disabled = false; // 一時停止中も終了できる
   updateExamTimerUI(); setExamStatus('','一時停止中'); toast('一時停止しました');
 }
 
