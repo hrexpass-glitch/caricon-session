@@ -139,6 +139,19 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 }
 #timerRange:disabled { opacity: .4; cursor: not-allowed; }
 
+
+/* ─── カスタムオーディオプレーヤー ─── */
+.custom-audio-wrap { margin-bottom:6px; }
+.custom-audio-bar-bg {
+  height:6px; background:var(--border2); border-radius:3px;
+  cursor:pointer; position:relative; margin-bottom:4px;
+}
+.custom-audio-bar-fill {
+  height:100%; background:var(--ac); border-radius:3px;
+  width:0%; pointer-events:none; transition:width .1s linear;
+}
+.custom-audio-time { font-size:11px; color:var(--muted); text-align:right; }
+
 @media print {
   .hdr-back,.hdr-btn,.fab,#card-timer,#card-actions,#card-exam,#card-exam-transcript,#card-exam-actions,
   .corr-bar,.add-row-btn,.speaker-bar,.live-text,.status,
@@ -238,8 +251,14 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 
     <div class="audio-player" id="audioPlayer">
       <div class="audio-label">🎧 面談録音</div>
-      <audio id="audioEl" controls style="width:100%;margin-bottom:8px"></audio>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <audio id="audioEl" style="display:none"></audio>
+      <div class="custom-audio-wrap">
+        <div class="custom-audio-bar-bg" onclick="seekAudio(event,'audioEl')">
+          <div class="custom-audio-bar-fill" id="audioBar"></div>
+        </div>
+        <div class="custom-audio-time" id="audioTimeDisp">0:00 / 0:00</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
         <button class="btn" id="audioPlayBtn" onclick="toggleAudio()" style="font-size:12px;padding:8px">▶ 再生</button>
         <button class="btn" onclick="downloadAudio()" style="font-size:12px;padding:8px">↓ ダウンロード</button>
       </div>
@@ -361,8 +380,14 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 
     <div class="audio-player" id="examAudioPlayer">
       <div class="audio-label">🎧 口頭試問録音</div>
-      <audio id="examAudioEl" controls style="width:100%;margin-bottom:8px"></audio>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <audio id="examAudioEl" style="display:none"></audio>
+      <div class="custom-audio-wrap">
+        <div class="custom-audio-bar-bg" onclick="seekAudio(event,'examAudioEl')">
+          <div class="custom-audio-bar-fill" id="examAudioBar"></div>
+        </div>
+        <div class="custom-audio-time" id="examAudioTimeDisp">0:00 / 0:00</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
         <button class="btn" id="examAudioPlayBtn" onclick="toggleExamAudio()" style="font-size:12px;padding:8px">▶ 再生</button>
         <button class="btn" onclick="downloadExamAudio()" style="font-size:12px;padding:8px">↓ ダウンロード</button>
       </div>
@@ -440,6 +465,7 @@ let isTimerRunning = false, timerInterval = null;
 let isRecording = false, isPaused = false;
 let mediaRecorder = null, audioStream = null;
 let allAudioChunks = [], audioBlob = null;
+let recStartedAt = null, recDurationMs = 0; // 録音時間を自前計測
 let savedChunks = []; // 一時停止をまたいで蓄積
 // 口頭試問
 let EXAM_DURATION = 5 * 60;
@@ -448,6 +474,7 @@ let isExamTimerRunning = false, examTimerInterval = null;
 let isExamRecording = false, isExamPaused = false;
 let examMediaRecorder = null, examAudioStream = null;
 let examAllChunks = [], examSavedChunks = [], examAudioBlob = null;
+let examRecStartedAt = null, examRecDurationMs = 0;
 let examSpeechRecognition = null;
 let examEntries = [], examNextId = 1;
 let examCurrentSpeaker = 'Q';
@@ -525,6 +552,10 @@ function newSession() {
   });
   document.getElementById('session-hdr-title').textContent = today+'の面談';
   document.getElementById('audioPlayer').classList.remove('show');
+  document.getElementById('examAudioPlayer').classList.remove('show');
+  examEntries=[]; examNextId=1; examAudioBlob=null; examAllChunks=[];
+  examCurrentSpeaker='Q'; finalizeExamRec(); resetExamTimerFull();
+  renderExamEntries();
   currentSpeaker = 'CC'; updateSpeakerBar(); renderEntries(); showPage('page-session');
 }
 
@@ -542,6 +573,10 @@ function openSession(id) {
   document.getElementById('memoText').value = s.memo||'';
   document.getElementById('session-hdr-title').textContent = s.title||s.date||'面談記録';
   document.getElementById('audioPlayer').classList.remove('show');
+  document.getElementById('examAudioPlayer').classList.remove('show');
+  examEntries=[]; examNextId=1; examAudioBlob=null; examAllChunks=[];
+  examCurrentSpeaker='Q'; finalizeExamRec(); resetExamTimerFull();
+  renderExamEntries();
   resetTimerFull(); renderEntries();
   if (entries.length) enableBtns();
   showPage('page-session');
@@ -662,6 +697,7 @@ async function startRec() {
     mediaRecorder = new MediaRecorder(audioStream);
     mediaRecorder.ondataavailable = e => { if(e.data.size>0) allAudioChunks.push(e.data); };
     mediaRecorder.start(500);
+    recDurationMs=0; recStartedAt=Date.now();
     isRecording=true; isPaused=false;
     startSpeechRecognition();
     return true;
@@ -669,6 +705,7 @@ async function startRec() {
 }
 
 function pauseRec() {
+  if(recStartedAt){ recDurationMs += Date.now()-recStartedAt; recStartedAt=null; }
   if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.pause();
   isPaused=true;
   if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
@@ -676,6 +713,7 @@ function pauseRec() {
 }
 
 function resumeRec() {
+  recStartedAt=Date.now();
   if(mediaRecorder && mediaRecorder.state==='paused') mediaRecorder.resume();
   isPaused=false; startSpeechRecognition();
 }
@@ -720,10 +758,11 @@ function finalizeRec() {
     document.getElementById('liveText').classList.remove('show');
     if(allAudioChunks.length > 0) {
       audioBlob = new Blob(allAudioChunks, {type:'audio/webm'});
+      if(recStartedAt){ recDurationMs += Date.now()-recStartedAt; recStartedAt=null; }
       const _audioEl = document.getElementById('audioEl');
       _audioEl.src = URL.createObjectURL(audioBlob);
       document.getElementById('audioPlayer').classList.add('show');
-      fixAudioDuration(_audioEl);
+      initCustomPlayer(_audioEl, recDurationMs, 'audioBar', 'audioTimeDisp');
     }
   };
   if(mediaRecorder && mediaRecorder.state!=='inactive') {
@@ -888,8 +927,9 @@ function downloadPdf(){
 // ─── Audio ───
 function toggleAudio(){
   const audio=document.getElementById('audioEl'), btn=document.getElementById('audioPlayBtn');
-  if(audio.paused){audio.play();btn.textContent='■ 再生停止';btn.className='btn btn-danger';audio.onended=()=>{btn.textContent='▶ 再生';btn.className='btn';};}
-  else{audio.pause();audio.currentTime=0;btn.textContent='▶ 再生';btn.className='btn';}
+  if(audio.paused){audio.play();btn.textContent='■ 停止';btn.className='btn btn-danger';}
+  else{audio.pause();btn.textContent='▶ 再生';btn.className='btn';}
+  audio.onended=()=>{btn.textContent='▶ 再生';btn.className='btn';};
 }
 // downloadAudio → endSession/JS参照
 
@@ -961,8 +1001,10 @@ function toggleExamStart(){
 }
 
 async function startExamBoth(){
-  // スタート前に切替済みの場合はそのまま保持、初回のみQに設定
-  if(!isExamRecording && !isExamPaused) updateExamSpeakerBar();
+  if(!isExamRecording && !isExamPaused){
+    examCurrentSpeaker='Q'; // 初回スタート時はQにリセット
+    updateExamSpeakerBar();
+  }
   const ok=await startExamRec();
   startExamCountdown();
   const btn=document.getElementById('examStartBtn');
@@ -993,12 +1035,14 @@ async function startExamRec(){
     examMediaRecorder=new MediaRecorder(examAudioStream);
     examMediaRecorder.ondataavailable=e=>{ if(e.data.size>0) examAllChunks.push(e.data); };
     examMediaRecorder.start(500);
+    examRecDurationMs=0; examRecStartedAt=Date.now();
     isExamRecording=true; isExamPaused=false;
     startExamSpeechRecognition(); return true;
   }catch(e){ toast('マイクへのアクセスが許可されていません'); return false; }
 }
 
 function pauseExamRec(){
+  if(examRecStartedAt){ examRecDurationMs += Date.now()-examRecStartedAt; examRecStartedAt=null; }
   if(examMediaRecorder && examMediaRecorder.state==='recording') examMediaRecorder.pause();
   isExamPaused=true;
   if(examSpeechRecognition){try{examSpeechRecognition.stop();}catch(e){} examSpeechRecognition=null;}
@@ -1006,6 +1050,7 @@ function pauseExamRec(){
 }
 
 function resumeExamRec(){
+  examRecStartedAt=Date.now();
   if(examMediaRecorder && examMediaRecorder.state==='paused') examMediaRecorder.resume();
   isExamPaused=false; startExamSpeechRecognition();
 }
@@ -1018,10 +1063,11 @@ function finalizeExamRec(){
     document.getElementById('examLiveText').classList.remove('show');
     if(examAllChunks.length>0){
       examAudioBlob=new Blob(examAllChunks,{type:'audio/webm'});
+      if(examRecStartedAt){ examRecDurationMs += Date.now()-examRecStartedAt; examRecStartedAt=null; }
       const _examAudioEl=document.getElementById('examAudioEl');
       _examAudioEl.src=URL.createObjectURL(examAudioBlob);
       document.getElementById('examAudioPlayer').classList.add('show');
-      fixAudioDuration(_examAudioEl);
+      initCustomPlayer(_examAudioEl, examRecDurationMs, 'examAudioBar', 'examAudioTimeDisp');
     }
   };
   if(examMediaRecorder && examMediaRecorder.state!=='inactive'){
@@ -1096,8 +1142,9 @@ function delExamEntry(id){if(!confirm('この行を削除しますか？'))retur
 // ─── 口頭試問 Audio ───
 function toggleExamAudio(){
   const audio=document.getElementById('examAudioEl'), btn=document.getElementById('examAudioPlayBtn');
-  if(audio.paused){audio.play();btn.textContent='■ 再生停止';btn.className='btn btn-danger';audio.onended=()=>{btn.textContent='▶ 再生';btn.className='btn';};}
-  else{audio.pause();audio.currentTime=0;btn.textContent='▶ 再生';btn.className='btn';}
+  if(audio.paused){audio.play();btn.textContent='■ 停止';btn.className='btn btn-danger';}
+  else{audio.pause();btn.textContent='▶ 再生';btn.className='btn';}
+  audio.onended=()=>{btn.textContent='▶ 再生';btn.className='btn';};
 }
 // downloadExamAudio → exam_extra_js参照
 
@@ -1175,23 +1222,38 @@ function downloadExamPdf(){
   requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
 }
 
-// ─── WebM duration修正（MediaRecorder録音はduration=Infinityになる問題を解消）───
-function fixAudioDuration(audioEl) {
-  if (!audioEl.src) return;
-  audioEl.addEventListener('loadedmetadata', function onMeta() {
-    audioEl.removeEventListener('loadedmetadata', onMeta);
-    if (audioEl.duration === Infinity) {
-      // 末尾にシークして時間を確定させる
-      audioEl.currentTime = 1e101;
-      function onTimeUpdate() {
-        if (audioEl.duration !== Infinity) {
-          audioEl.removeEventListener('timeupdate', onTimeUpdate);
-          audioEl.currentTime = 0;
-        }
-      }
-      audioEl.addEventListener('timeupdate', onTimeUpdate);
-    }
+// ─── カスタムオーディオプレーヤー ───
+function fmtTime(ms){
+  const s=Math.floor(ms/1000), m=Math.floor(s/60);
+  return m+':'+(s%60).toString().padStart(2,'0');
+}
+
+function initCustomPlayer(audioEl, durationMs, barId, timeId){
+  const bar=document.getElementById(barId);
+  const timeDisp=document.getElementById(timeId);
+  const total=durationMs>0 ? durationMs : 0;
+  timeDisp.textContent='0:00 / '+fmtTime(total);
+
+  audioEl.addEventListener('timeupdate', ()=>{
+    const cur=audioEl.currentTime*1000;
+    const pct=total>0 ? Math.min(cur/total*100, 100) : 0;
+    bar.style.width=pct+'%';
+    timeDisp.textContent=fmtTime(cur)+' / '+fmtTime(total);
   });
+  audioEl.addEventListener('ended', ()=>{
+    bar.style.width='0%';
+    timeDisp.textContent='0:00 / '+fmtTime(total);
+  });
+}
+
+function seekAudio(event, audioId){
+  const audioEl=document.getElementById(audioId);
+  if(!audioEl.src) return;
+  const bg=event.currentTarget;
+  const rect=bg.getBoundingClientRect();
+  const ratio=Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width));
+  const durMs = audioId==='audioEl' ? recDurationMs : examRecDurationMs;
+  audioEl.currentTime=(durMs/1000)*ratio;
 }
 
 // ─── Toast ───
