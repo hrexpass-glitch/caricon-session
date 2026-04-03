@@ -223,7 +223,10 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
       <button class="switch-btn to-cl" id="switchBtn" onclick="switchSpeaker()">CLに切替</button>
     </div>
 
-    <button class="btn btn-full" id="resetBtn" onclick="resetTimerFull()" style="margin-bottom:0">↺ リセット</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0">
+      <button class="btn btn-full btn-danger" id="endBtn" onclick="endSession()" disabled style="font-size:13px;padding:11px">⏹ 終了・録音確定</button>
+      <button class="btn btn-full" id="resetBtn" onclick="resetTimerFull()" style="font-size:13px;padding:11px">↺ リセット</button>
+    </div>
 
     <div class="status" id="statusBar">
       <span class="status-dot"></span>
@@ -321,7 +324,17 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     <div class="timer-lbl" id="examTimerLbl">5分カウントダウン</div>
 
     <button class="btn btn-full btn-primary" id="examStartBtn" onclick="toggleExamStart()" style="margin-bottom:8px;font-size:15px;padding:14px">▶ スタート</button>
-    <button class="btn btn-full" onclick="resetExamTimerFull()" style="margin-bottom:0">↺ リセット</button>
+
+    <div class="speaker-bar" id="examSpeakerBar" style="margin-bottom:8px">
+      <div class="speaker-label">現在の発言者</div>
+      <div class="speaker-name cc" id="examSpeakerName">Q 試験官</div>
+      <button class="switch-btn to-cl" id="examSwitchBtn" onclick="switchExamSpeaker()">A 自分に切替</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0">
+      <button class="btn btn-full btn-danger" id="examEndBtn" onclick="endExamSession()" disabled style="font-size:13px;padding:11px">⏹ 終了・録音確定</button>
+      <button class="btn btn-full" onclick="resetExamTimerFull()" style="font-size:13px;padding:11px">↺ リセット</button>
+    </div>
 
     <div class="status" id="examStatusBar" style="margin-top:8px">
       <span class="status-dot"></span>
@@ -590,6 +603,7 @@ function resetTimerFull() {
   timerSecondsLeft = TIMER_DURATION;
   const btn = document.getElementById('startBtn');
   btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
+  document.getElementById('endBtn').disabled = true;
   btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
   updateTimerUI();
 }
@@ -655,6 +669,38 @@ function pauseRec() {
 function resumeRec() {
   startMediaRecorder();
   isPaused=false; startSpeechRecognition();
+}
+
+
+// ─── 面談 終了・録音確定 ───
+function endSession() {
+  clearInterval(timerInterval); isTimerRunning = false;
+  const btn = document.getElementById('startBtn');
+  btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
+  btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
+  document.getElementById('endBtn').disabled = true;
+  finalizeRec();
+  setStatus('done','録音確定済み');
+  toast('録音を確定しました');
+}
+
+// ─── 録音中でも途中ダウンロード ───
+function downloadAudio(){
+  // 録音確定済みblob優先、なければ現在のchunksをその場でBlob化
+  if(audioBlob){
+    _doDownloadAudio(audioBlob); return;
+  }
+  const chunks = savedChunks.concat(allAudioChunks);
+  if(!chunks.length){ toast('録音データがありません'); return; }
+  const blob = new Blob(chunks, {type:'audio/webm'});
+  _doDownloadAudio(blob);
+  toast('録音中のデータをダウンロードしました（終了後に完全版が取得できます）');
+}
+function _doDownloadAudio(blob){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='録音_'+(document.getElementById('sessionDate').value||'recording').replace(/-/g,'')+'.webm';
+  a.click();
 }
 
 function finalizeRec() {
@@ -836,13 +882,7 @@ function toggleAudio(){
   if(audio.paused){audio.play();btn.textContent='■ 再生停止';btn.className='btn btn-danger';audio.onended=()=>{btn.textContent='▶ 再生';btn.className='btn';};}
   else{audio.pause();audio.currentTime=0;btn.textContent='▶ 再生';btn.className='btn';}
 }
-function downloadAudio(){
-  if(!audioBlob){toast('録音データがありません');return;}
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(audioBlob);
-  a.download='録音_'+(document.getElementById('sessionDate').value||'recording').replace(/-/g,'')+'.webm';
-  a.click(); toast('録音データをダウンロードしました');
-}
+// downloadAudio → endSession/JS参照
 
 // ─── 口頭試問 Timer ───
 function fmtExam(s){return Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).toString().padStart(2,'0');}
@@ -901,6 +941,7 @@ function resetExamTimerFull(){
   examSecondsLeft=EXAM_DURATION;
   const btn=document.getElementById('examStartBtn');
   btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
+  document.getElementById('examEndBtn').disabled = true;
   updateExamTimerUI(); setExamStatus('','タイマーまたは録音を開始してください');
 }
 
@@ -911,10 +952,12 @@ function toggleExamStart(){
 }
 
 async function startExamBoth(){
+  examCurrentSpeaker='Q'; updateExamSpeakerBar();
   const ok=await startExamRec();
   startExamCountdown();
   const btn=document.getElementById('examStartBtn');
   btn.textContent='⏸ 一時停止'; btn.className='btn btn-full btn-stop';
+  document.getElementById('examEndBtn').disabled = false;
   setExamStatus('rec', ok?'録音中 + タイマー動作中':'タイマー動作中（マイク未使用）');
 }
 
@@ -1050,12 +1093,53 @@ function toggleExamAudio(){
   if(audio.paused){audio.play();btn.textContent='■ 再生停止';btn.className='btn btn-danger';audio.onended=()=>{btn.textContent='▶ 再生';btn.className='btn';};}
   else{audio.pause();audio.currentTime=0;btn.textContent='▶ 再生';btn.className='btn';}
 }
+// downloadExamAudio → exam_extra_js参照
+
+// ─── 口頭試問 発言者切替 ───
+function switchExamSpeaker(){
+  examCurrentSpeaker = examCurrentSpeaker === 'Q' ? 'A' : 'Q';
+  updateExamSpeakerBar();
+}
+function updateExamSpeakerBar(){
+  const bar = document.getElementById('examSpeakerBar');
+  const nameEl = document.getElementById('examSpeakerName');
+  const btn = document.getElementById('examSwitchBtn');
+  if(examCurrentSpeaker === 'Q'){
+    bar.className='speaker-bar is-cc';
+    nameEl.className='speaker-name cc'; nameEl.textContent='Q 試験官';
+    btn.className='switch-btn to-cl'; btn.textContent='A 自分に切替';
+  } else {
+    bar.className='speaker-bar is-cl';
+    nameEl.className='speaker-name cl'; nameEl.textContent='A 自分';
+    btn.className='switch-btn to-cc'; btn.textContent='Q 試験官に切替';
+  }
+}
+
+// ─── 口頭試問 終了・録音確定 ───
+function endExamSession(){
+  clearInterval(examTimerInterval); isExamTimerRunning = false;
+  const btn = document.getElementById('examStartBtn');
+  btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
+  document.getElementById('examEndBtn').disabled = true;
+  finalizeExamRec();
+  setExamStatus('done','録音確定済み');
+  toast('口頭試問の録音を確定しました');
+}
+
+// ─── 口頭試問 途中ダウンロード ───
 function downloadExamAudio(){
-  if(!examAudioBlob){toast('録音データがありません');return;}
+  if(examAudioBlob){ _doDownloadExamAudio(examAudioBlob); return; }
+  const chunks = examSavedChunks.concat(examAllChunks);
+  if(!chunks.length){ toast('録音データがありません'); return; }
+  const blob = new Blob(chunks, {type:'audio/webm'});
+  _doDownloadExamAudio(blob);
+  toast('録音中のデータをダウンロードしました');
+}
+function _doDownloadExamAudio(blob){
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(examAudioBlob);
+  a.href=URL.createObjectURL(blob);
   a.download='口頭試問_'+(document.getElementById('sessionDate').value||'recording').replace(/-/g,'')+'.webm';
-  a.click(); toast('口頭試問録音をダウンロードしました');
+  a.click();
 }
 
 function setExamStatus(type,text){
