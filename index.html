@@ -315,7 +315,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
         <label style="margin-bottom:0">カスタム時間（分）</label>
         <span id="examRangeVal" style="font-size:16px;font-weight:700;color:var(--ac)">5分</span>
       </div>
-      <input type="range" id="examRange" min="0" max="9" value="4"
+      <input type="range" id="examRange" min="0" max="8" value="4"
              oninput="onExamRangeChange(this.value)" style="width:100%;display:block;accent-color:var(--ac)">
     </div>
 
@@ -876,13 +876,13 @@ function setExamTimer(min){
   if(isExamTimerRunning) return;
   EXAM_DURATION=min*60; examSecondsLeft=EXAM_DURATION;
   const el=document.getElementById('examRange');
-  if(el){ el.value=min-1; document.getElementById('examRangeVal').textContent=min+'分'; }
+  if(el){ el.value=Math.min(min-1, 8); document.getElementById('examRangeVal').textContent=min+'分'; }
   updateExamTimerUI(); toast(min+'分にセットしました');
 }
 
 function onExamRangeChange(val){
   if(isExamTimerRunning) return;
-  const mins=parseInt(val)+1;
+  const mins=Math.min(parseInt(val)+1, 10); // 最大10分
   EXAM_DURATION=mins*60; examSecondsLeft=EXAM_DURATION;
   document.getElementById('examRangeVal').textContent=mins+'分';
   updateExamTimerUI();
