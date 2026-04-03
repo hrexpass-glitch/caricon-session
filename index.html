@@ -203,12 +203,12 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     </div>
 
     <div class="field" style="margin-bottom:10px">
-      <label>カスタム時間（分）</label>
-      <div style="display:flex;align-items:center;gap:10px">
-        <input type="range" id="timerRange" min="0" max="28" value="14"
-               oninput="onRangeChange(this.value)" style="flex:1">
-        <span id="timerRangeVal" style="font-size:16px;font-weight:700;color:var(--ac);min-width:40px;text-align:right">15分</span>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <label style="margin-bottom:0">カスタム時間（分）</label>
+        <span id="timerRangeVal" style="font-size:16px;font-weight:700;color:var(--ac)">15分</span>
       </div>
+      <input type="range" id="timerRange" min="0" max="28" value="14"
+             oninput="onRangeChange(this.value)" style="width:100%;display:block">
     </div>
 
     <div class="timer-num" id="timerDisplay">15:00</div>
