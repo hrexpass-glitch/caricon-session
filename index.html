@@ -140,7 +140,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 #timerRange:disabled { opacity: .4; cursor: not-allowed; }
 
 @media print {
-  .hdr-back,.hdr-btn,.fab,#card-timer,#card-actions,#card-exam,#card-exam-transcript,
+  .hdr-back,.hdr-btn,.fab,#card-timer,#card-actions,#card-exam,#card-exam-transcript,#card-exam-actions,
   .corr-bar,.add-row-btn,.speaker-bar,.live-text,.status,
   .del-btn,.count-badge,#card-transcript,.audio-player{display:none!important;}
   body{font-size:11px!important;background:#fff!important;}
@@ -156,6 +156,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
   .memo-body{display:block!important;}
   .memo-ta{border:1px solid #ccc!important;background:#fffdf5!important;font-size:10px!important;min-height:auto!important;}
   #print-table{display:block!important;}
+  #exam-print-table{display:block!important;}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
 }
 </style>
@@ -275,6 +276,22 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     </div>
   </div>
 
+<div id="exam-print-table" style="display:none;padding:0 12px">
+  <div style="font-family:'Noto Serif JP',serif;font-size:13px;font-weight:600;margin:8px 0 4px;border-bottom:2px solid #333;padding-bottom:4px">口頭試問記録</div>
+  <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:6px">
+    <thead>
+      <tr style="background:#f2f2f0">
+        <th style="border:1px solid #ccc;padding:5px;width:28px;text-align:center">番号</th>
+        <th style="border:1px solid #ccc;padding:5px;width:44px;text-align:center">発言者</th>
+        <th style="border:1px solid #ccc;padding:5px;width:36px;text-align:center">時刻</th>
+        <th style="border:1px solid #ccc;padding:5px">内容</th>
+        <th style="border:1px solid #ccc;padding:5px;width:28%">メモ・気づき</th>
+      </tr>
+    </thead>
+    <tbody id="exam-pt-body"></tbody>
+  </table>
+</div>
+
 <div id="print-table" style="display:none;padding:0 12px">
   <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:8px">
     <thead>
@@ -366,6 +383,11 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
       <div id="examEntryList"></div>
       <button class="add-row-btn" onclick="addExamRow()">＋ 行を追加</button>
     </div>
+  </div>
+
+  <div class="card" id="card-exam-actions">
+    <div class="sec-lbl">口頭試問 操作</div>
+    <button class="action-btn" id="examPdfBtn" onclick="downloadExamPdf()" disabled>↓ 口頭試問PDF出力</button>
   </div>
 
 </div>
@@ -698,8 +720,10 @@ function finalizeRec() {
     document.getElementById('liveText').classList.remove('show');
     if(allAudioChunks.length > 0) {
       audioBlob = new Blob(allAudioChunks, {type:'audio/webm'});
-      document.getElementById('audioEl').src = URL.createObjectURL(audioBlob);
+      const _audioEl = document.getElementById('audioEl');
+      _audioEl.src = URL.createObjectURL(audioBlob);
       document.getElementById('audioPlayer').classList.add('show');
+      fixAudioDuration(_audioEl);
     }
   };
   if(mediaRecorder && mediaRecorder.state!=='inactive') {
@@ -994,8 +1018,10 @@ function finalizeExamRec(){
     document.getElementById('examLiveText').classList.remove('show');
     if(examAllChunks.length>0){
       examAudioBlob=new Blob(examAllChunks,{type:'audio/webm'});
-      document.getElementById('examAudioEl').src=URL.createObjectURL(examAudioBlob);
+      const _examAudioEl=document.getElementById('examAudioEl');
+      _examAudioEl.src=URL.createObjectURL(examAudioBlob);
       document.getElementById('examAudioPlayer').classList.add('show');
+      fixAudioDuration(_examAudioEl);
     }
   };
   if(examMediaRecorder && examMediaRecorder.state!=='inactive'){
@@ -1022,11 +1048,12 @@ function startExamSpeechRecognition(){
     if(finalBuffer.trim()){
       liveEl.textContent='✓ '+finalBuffer;
       clearTimeout(silenceTimer);
+      const speakerSnapshot = examCurrentSpeaker; // タイムアウト前にスナップショット
       silenceTimer=setTimeout(()=>{
         if(finalBuffer.trim()){
           const el2=EXAM_DURATION-examSecondsLeft;
           const mm=Math.floor(el2/60).toString().padStart(2,'0'), ss=(el2%60).toString().padStart(2,'0');
-          examEntries.push({id:examNextId++,label:examCurrentSpeaker,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
+          examEntries.push({id:examNextId++,label:speakerSnapshot,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
           renderExamEntries(); finalBuffer=''; liveEl.textContent='';
         }
       },1800);
@@ -1044,6 +1071,7 @@ function renderExamEntries(){
   const counter=document.getElementById('examEntryCounter');
   if(!examEntries.length){empty.style.display='block';wrap.style.display='none';counter.textContent='—';return;}
   empty.style.display='none'; wrap.style.display='block'; counter.textContent=examEntries.length+' 件';
+  document.getElementById('examPdfBtn').disabled=false;
   document.getElementById('examEntryList').innerHTML=examEntries.map((e,i)=>`
     <div class="entry-card" id="ee-${e.id}">
       <div class="entry-top">
@@ -1077,6 +1105,7 @@ function toggleExamAudio(){
 function switchExamSpeaker(){
   examCurrentSpeaker = examCurrentSpeaker === 'Q' ? 'A' : 'Q';
   updateExamSpeakerBar();
+  toast(examCurrentSpeaker === 'Q' ? '🎤 Q 試験官 に切替' : '🎤 A 自分 に切替');
 }
 function updateExamSpeakerBar(){
   const bar = document.getElementById('examSpeakerBar');
@@ -1123,6 +1152,46 @@ function _doDownloadExamAudio(blob){
 function setExamStatus(type,text){
   document.getElementById('examStatusBar').className='status'+(type?' '+type:'');
   document.getElementById('examStatusTxt').textContent=text;
+}
+
+// ─── 口頭試問 PDF ───
+function downloadExamPdf(){
+  const ccN=document.getElementById('ccName').value||'CC';
+  document.getElementById('exam-pt-body').innerHTML=examEntries.map((e,i)=>{
+    const isQ=e.label==='Q';
+    const lc=isQ?'#2d7a5e':'#5a4a8e';
+    const name=isQ?'Q 試験官':'A 自分';
+    return '<tr style="page-break-inside:avoid">'
+      +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;color:#888;font-size:10px">'+String(i+1).padStart(2,'0')+'</td>'
+      +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center"><span style="display:inline-block;background:'+lc+';color:#fff;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:3px">'+e.label+'</span><br><span style="font-size:9px;color:#666">'+name+'</span></td>'
+      +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;font-size:10px;color:#888">'+(e.time||'—')+'</td>'
+      +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6">'+(e.text||'').replace(/</g,'&lt;')+'</td>'
+      +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#444">'+(e.notes||'').replace(/</g,'&lt;')+'</td>'
+      +'</tr>';
+  }).join('');
+  const pt=document.getElementById('exam-print-table'); pt.style.display='block';
+  document.getElementById('memoBody').classList.add('open'); document.getElementById('memoToggle').classList.add('open');
+  window.onafterprint=()=>{pt.style.display='none';};
+  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
+}
+
+// ─── WebM duration修正（MediaRecorder録音はduration=Infinityになる問題を解消）───
+function fixAudioDuration(audioEl) {
+  if (!audioEl.src) return;
+  audioEl.addEventListener('loadedmetadata', function onMeta() {
+    audioEl.removeEventListener('loadedmetadata', onMeta);
+    if (audioEl.duration === Infinity) {
+      // 末尾にシークして時間を確定させる
+      audioEl.currentTime = 1e101;
+      function onTimeUpdate() {
+        if (audioEl.duration !== Infinity) {
+          audioEl.removeEventListener('timeupdate', onTimeUpdate);
+          audioEl.currentTime = 0;
+        }
+      }
+      audioEl.addEventListener('timeupdate', onTimeUpdate);
+    }
+  });
 }
 
 // ─── Toast ───
