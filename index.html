@@ -315,7 +315,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
         <label style="margin-bottom:0">カスタム時間（分）</label>
         <span id="examRangeVal" style="font-size:16px;font-weight:700;color:var(--ac)">5分</span>
       </div>
-      <input type="range" id="examRange" min="0" max="19" value="4"
+      <input type="range" id="examRange" min="0" max="9" value="4"
              oninput="onExamRangeChange(this.value)" style="width:100%;display:block;accent-color:var(--ac)">
     </div>
 
@@ -635,39 +635,26 @@ function beep() {
 // ─── Recording（一時停止→再開でも音声が途切れない）───
 async function startRec() {
   try {
-    if (!audioStream) {
-      audioStream = await navigator.mediaDevices.getUserMedia({audio:true});
-    }
-    allAudioChunks = []; savedChunks = [];
-    startMediaRecorder();
+    audioStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    allAudioChunks = [];
+    mediaRecorder = new MediaRecorder(audioStream);
+    mediaRecorder.ondataavailable = e => { if(e.data.size>0) allAudioChunks.push(e.data); };
+    mediaRecorder.start(500);
     isRecording=true; isPaused=false;
     startSpeechRecognition();
     return true;
   } catch(e) { toast('マイクへのアクセスが許可されていません'); return false; }
 }
 
-function startMediaRecorder() {
-  mediaRecorder = new MediaRecorder(audioStream);
-  mediaRecorder.ondataavailable = e => { if(e.data.size>0) allAudioChunks.push(e.data); };
-  mediaRecorder.start(500);
-}
-
 function pauseRec() {
-  // stop/restartでpause代替（モバイル互換）
-  if(mediaRecorder && mediaRecorder.state==='recording') {
-    mediaRecorder.onstop = () => {
-      savedChunks = savedChunks.concat(allAudioChunks);
-      allAudioChunks = [];
-    };
-    mediaRecorder.stop();
-  }
+  if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.pause();
   isPaused=true;
   if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
   document.getElementById('liveText').classList.remove('show');
 }
 
 function resumeRec() {
-  startMediaRecorder();
+  if(mediaRecorder && mediaRecorder.state==='paused') mediaRecorder.resume();
   isPaused=false; startSpeechRecognition();
 }
 
@@ -690,7 +677,7 @@ function downloadAudio(){
   if(audioBlob){
     _doDownloadAudio(audioBlob); return;
   }
-  const chunks = savedChunks.concat(allAudioChunks);
+  const chunks = allAudioChunks;
   if(!chunks.length){ toast('録音データがありません'); return; }
   const blob = new Blob(chunks, {type:'audio/webm'});
   _doDownloadAudio(blob);
@@ -705,17 +692,15 @@ function _doDownloadAudio(blob){
 
 function finalizeRec() {
   const doFinalize = () => {
-    const allChunks = savedChunks.concat(allAudioChunks);
     if(audioStream){audioStream.getTracks().forEach(t=>t.stop()); audioStream=null;}
     isRecording=false; isPaused=false;
     if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
     document.getElementById('liveText').classList.remove('show');
-    if(allChunks.length > 0) {
-      audioBlob = new Blob(allChunks, {type:'audio/webm'});
+    if(allAudioChunks.length > 0) {
+      audioBlob = new Blob(allAudioChunks, {type:'audio/webm'});
       document.getElementById('audioEl').src = URL.createObjectURL(audioBlob);
       document.getElementById('audioPlayer').classList.add('show');
     }
-    savedChunks = []; allAudioChunks = [];
   };
   if(mediaRecorder && mediaRecorder.state!=='inactive') {
     mediaRecorder.onstop = doFinalize;
@@ -952,7 +937,8 @@ function toggleExamStart(){
 }
 
 async function startExamBoth(){
-  examCurrentSpeaker='Q'; updateExamSpeakerBar();
+  // スタート前に切替済みの場合はそのまま保持、初回のみQに設定
+  if(!isExamRecording && !isExamPaused) updateExamSpeakerBar();
   const ok=await startExamRec();
   startExamCountdown();
   const btn=document.getElementById('examStartBtn');
@@ -978,47 +964,39 @@ function resumeExamBoth(){
 // ─── 口頭試問 Recording ───
 async function startExamRec(){
   try{
-    if(!examAudioStream) examAudioStream=await navigator.mediaDevices.getUserMedia({audio:true});
-    examAllChunks=[]; examSavedChunks=[];
-    startExamMediaRecorder();
+    examAudioStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    examAllChunks=[];
+    examMediaRecorder=new MediaRecorder(examAudioStream);
+    examMediaRecorder.ondataavailable=e=>{ if(e.data.size>0) examAllChunks.push(e.data); };
+    examMediaRecorder.start(500);
     isExamRecording=true; isExamPaused=false;
     startExamSpeechRecognition(); return true;
   }catch(e){ toast('マイクへのアクセスが許可されていません'); return false; }
 }
 
-function startExamMediaRecorder(){
-  examMediaRecorder=new MediaRecorder(examAudioStream);
-  examMediaRecorder.ondataavailable=e=>{ if(e.data.size>0) examAllChunks.push(e.data); };
-  examMediaRecorder.start(500);
-}
-
 function pauseExamRec(){
-  if(examMediaRecorder && examMediaRecorder.state==='recording'){
-    examMediaRecorder.onstop=()=>{ examSavedChunks=examSavedChunks.concat(examAllChunks); examAllChunks=[]; };
-    examMediaRecorder.stop();
-  }
+  if(examMediaRecorder && examMediaRecorder.state==='recording') examMediaRecorder.pause();
   isExamPaused=true;
   if(examSpeechRecognition){try{examSpeechRecognition.stop();}catch(e){} examSpeechRecognition=null;}
   document.getElementById('examLiveText').classList.remove('show');
 }
 
 function resumeExamRec(){
-  startExamMediaRecorder(); isExamPaused=false; startExamSpeechRecognition();
+  if(examMediaRecorder && examMediaRecorder.state==='paused') examMediaRecorder.resume();
+  isExamPaused=false; startExamSpeechRecognition();
 }
 
 function finalizeExamRec(){
   const doFinalize=()=>{
-    const all=examSavedChunks.concat(examAllChunks);
     if(examAudioStream){examAudioStream.getTracks().forEach(t=>t.stop()); examAudioStream=null;}
     isExamRecording=false; isExamPaused=false;
     if(examSpeechRecognition){try{examSpeechRecognition.stop();}catch(e){} examSpeechRecognition=null;}
     document.getElementById('examLiveText').classList.remove('show');
-    if(all.length>0){
-      examAudioBlob=new Blob(all,{type:'audio/webm'});
+    if(examAllChunks.length>0){
+      examAudioBlob=new Blob(examAllChunks,{type:'audio/webm'});
       document.getElementById('examAudioEl').src=URL.createObjectURL(examAudioBlob);
       document.getElementById('examAudioPlayer').classList.add('show');
     }
-    examSavedChunks=[]; examAllChunks=[];
   };
   if(examMediaRecorder && examMediaRecorder.state!=='inactive'){
     examMediaRecorder.onstop=doFinalize; examMediaRecorder.stop();
@@ -1129,7 +1107,7 @@ function endExamSession(){
 // ─── 口頭試問 途中ダウンロード ───
 function downloadExamAudio(){
   if(examAudioBlob){ _doDownloadExamAudio(examAudioBlob); return; }
-  const chunks = examSavedChunks.concat(examAllChunks);
+  const chunks = examAllChunks;
   if(!chunks.length){ toast('録音データがありません'); return; }
   const blob = new Blob(chunks, {type:'audio/webm'});
   _doDownloadExamAudio(blob);
