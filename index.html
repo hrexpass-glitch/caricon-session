@@ -154,7 +154,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 
 @media print {
   .hdr-back,.hdr-btn,.fab,#card-timer,#card-actions,#card-exam,#card-exam-transcript,#card-exam-actions,
-  .corr-bar,.add-row-btn,.speaker-bar,.live-text,.status,
+  .corr-bar,.examCorrBar,.add-row-btn,.speaker-bar,.live-text,.status,
   .del-btn,.count-badge,#card-transcript,.audio-player{display:none!important;}
   body{font-size:11px!important;background:#fff!important;}
   .page{display:block!important;padding:0!important;}
@@ -291,7 +291,6 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     </div>
     <div id="tableWrap" style="display:none">
       <div id="entryList"></div>
-      <button class="add-row-btn" onclick="addRow()">＋ 行を追加</button>
     </div>
   </div>
 
@@ -406,13 +405,21 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     </div>
     <div id="examTableWrap" style="display:none">
       <div id="examEntryList"></div>
-      <button class="add-row-btn" onclick="addExamRow()">＋ 行を追加</button>
     </div>
   </div>
 
   <div class="card" id="card-exam-actions">
     <div class="sec-lbl">口頭試問 操作</div>
+    <button class="action-btn" id="examCorrectBtn" onclick="showExamCorrection()" disabled>⇄ Q/Aラベルずれを一括訂正</button>
+    <button class="action-btn" onclick="addExamRow()">＋ 行を手動追加</button>
     <button class="action-btn" id="examPdfBtn" onclick="downloadExamPdf()" disabled>↓ 口頭試問PDF出力</button>
+  </div>
+
+  <div class="corr-bar" id="examCorrBar">
+    <div class="corr-txt"><strong>一括訂正：</strong>何番目以降が入れ替わっていますか？</div>
+    <select class="corr-sel" id="examCorrFrom"><option value="">番号を選択</option></select>
+    <button class="corr-apply" onclick="applyExamCorrection()">訂正</button>
+    <button class="corr-close" onclick="hideExamCorrection()">✕</button>
   </div>
 
 </div>
@@ -1120,6 +1127,9 @@ function renderExamEntries(){
   if(!examEntries.length){empty.style.display='block';wrap.style.display='none';counter.textContent='—';return;}
   empty.style.display='none'; wrap.style.display='block'; counter.textContent=examEntries.length+' 件';
   document.getElementById('examPdfBtn').disabled=false;
+  document.getElementById('examCorrectBtn').disabled=false;
+  const examSel=document.getElementById('examCorrFrom');
+  if(examSel) examSel.innerHTML='<option value="">番号を選択</option>'+examEntries.map((e,i)=>`<option value="${i}">${String(i+1).padStart(2,'0')} (${e.label}): ${e.text.slice(0,18)}…</option>`).join('');
   document.getElementById('examEntryList').innerHTML=examEntries.map((e,i)=>`
     <div class="entry-card" id="ee-${e.id}">
       <div class="entry-top">
@@ -1201,6 +1211,16 @@ function _doDownloadExamAudio(blob){
 function setExamStatus(type,text){
   document.getElementById('examStatusBar').className='status'+(type?' '+type:'');
   document.getElementById('examStatusTxt').textContent=text;
+}
+
+// ─── 口頭試問 一括訂正 ───
+function showExamCorrection(){document.getElementById('examCorrBar').classList.add('show');}
+function hideExamCorrection(){document.getElementById('examCorrBar').classList.remove('show');}
+function applyExamCorrection(){
+  const from=parseInt(document.getElementById('examCorrFrom').value);
+  if(isNaN(from)){toast('番号を選択してください');return;}
+  for(let i=from;i<examEntries.length;i++) examEntries[i].label=examEntries[i].label==='Q'?'A':'Q';
+  renderExamEntries();hideExamCorrection();toast((from+1)+'番目以降のQ/Aを入れ替えました ✓');
 }
 
 // ─── 口頭試問 PDF ───
