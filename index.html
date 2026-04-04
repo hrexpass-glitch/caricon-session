@@ -842,13 +842,16 @@ function startSpeechRecognition() {
   const liveEl=document.getElementById('liveText'); liveEl.classList.add('show');
   let finalBuffer='', silenceTimer=null;
 
+  let segmentSpeaker = null; // 話し始めの瞬間にスナップショット
+
   mainFlushBuffer = () => {
     clearTimeout(silenceTimer);
     if(finalBuffer.trim()){
+      const spk = segmentSpeaker || currentSpeaker;
       const el=TIMER_DURATION-timerSecondsLeft;
       const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
-      entries.push({id:nextId++,label:currentSpeaker,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
-      renderEntries(); enableBtns(); finalBuffer=''; liveEl.textContent='';
+      entries.push({id:nextId++,label:spk,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
+      renderEntries(); enableBtns(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
     }
   };
 
@@ -858,16 +861,19 @@ function startSpeechRecognition() {
       const t=event.results[i][0].transcript;
       if(event.results[i].isFinal) final+=t; else interim+=t;
     }
+    // 話し始めの瞬間（最初のinterim）にspeakerを確定
+    if(interim && segmentSpeaker===null) segmentSpeaker=currentSpeaker;
     if(interim) liveEl.textContent='🎤 '+interim;
     if(final.trim()){
       finalBuffer+=final; liveEl.textContent='✓ '+finalBuffer;
       clearTimeout(silenceTimer);
+      const spk = segmentSpeaker || currentSpeaker;
       silenceTimer=setTimeout(()=>{
         if(finalBuffer.trim()){
           const el=TIMER_DURATION-timerSecondsLeft;
           const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
-          entries.push({id:nextId++,label:currentSpeaker,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
-          renderEntries(); enableBtns(); finalBuffer=''; liveEl.textContent='';
+          entries.push({id:nextId++,label:spk,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
+          renderEntries(); enableBtns(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
         }
       },1800);
     }
@@ -1111,13 +1117,16 @@ function startExamSpeechRecognition(){
   liveEl.classList.add('show');
   let finalBuffer='', silenceTimer=null;
 
+  let segmentSpeaker = null; // 話し始めの瞬間にスナップショット
+
   examFlushBuffer = () => {
     clearTimeout(silenceTimer);
     if(finalBuffer.trim()){
+      const spk = segmentSpeaker || examCurrentSpeaker;
       const el2=EXAM_DURATION-examSecondsLeft;
       const mm=Math.floor(el2/60).toString().padStart(2,'0'), ss=(el2%60).toString().padStart(2,'0');
-      examEntries.push({id:examNextId++,label:examCurrentSpeaker,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
-      renderExamEntries(); finalBuffer=''; liveEl.textContent='';
+      examEntries.push({id:examNextId++,label:spk,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
+      renderExamEntries(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
     }
   };
 
@@ -1127,16 +1136,19 @@ function startExamSpeechRecognition(){
       if(e.results[i].isFinal) finalBuffer+=e.results[i][0].transcript;
       else interim+=e.results[i][0].transcript;
     }
+    // 話し始めの瞬間（最初のinterim）にspeakerを確定
+    if(interim && segmentSpeaker===null) segmentSpeaker=examCurrentSpeaker;
     if(interim) liveEl.textContent='…'+interim;
     if(finalBuffer.trim()){
       liveEl.textContent='✓ '+finalBuffer;
       clearTimeout(silenceTimer);
+      const spk = segmentSpeaker || examCurrentSpeaker;
       silenceTimer=setTimeout(()=>{
         if(finalBuffer.trim()){
           const el2=EXAM_DURATION-examSecondsLeft;
           const mm=Math.floor(el2/60).toString().padStart(2,'0'), ss=(el2%60).toString().padStart(2,'0');
-          examEntries.push({id:examNextId++,label:examCurrentSpeaker,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
-          renderExamEntries(); finalBuffer=''; liveEl.textContent='';
+          examEntries.push({id:examNextId++,label:spk,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
+          renderExamEntries(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
         }
       },1800);
     }
