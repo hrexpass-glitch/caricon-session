@@ -482,6 +482,8 @@ let isExamRecording = false, isExamPaused = false;
 let examMediaRecorder = null, examAudioStream = null;
 let examAllChunks = [], examSavedChunks = [], examAudioBlob = null;
 let examRecStartedAt = null, examRecDurationMs = 0;
+let examFlushBuffer = null; // 切替時にバッファを強制フラッシュ
+let mainFlushBuffer = null; // 面談側も同様
 let examSpeechRecognition = null;
 let examEntries = [], examNextId = 1;
 let examCurrentSpeaker = 'Q';
@@ -827,7 +829,11 @@ function updateSpeakerBar() {
     nameEl.textContent='CL（'+clN+'）'; btn.className='switch-btn to-cc'; btn.textContent='CC に切替';
   }
 }
-function switchSpeaker() { currentSpeaker=currentSpeaker==='CC'?'CL':'CC'; updateSpeakerBar(); toast(currentSpeaker+' に切り替えました'); }
+function switchSpeaker() {
+  if(mainFlushBuffer) mainFlushBuffer(); // 切替前に現在の発言を確定
+  currentSpeaker=currentSpeaker==='CC'?'CL':'CC';
+  updateSpeakerBar(); toast(currentSpeaker+' に切り替えました');
+}
 
 // ─── Speech ───
 function startSpeechRecognition() {
@@ -835,6 +841,17 @@ function startSpeechRecognition() {
   speechRecognition=new SR(); speechRecognition.lang='ja-JP'; speechRecognition.continuous=true; speechRecognition.interimResults=true;
   const liveEl=document.getElementById('liveText'); liveEl.classList.add('show');
   let finalBuffer='', silenceTimer=null;
+
+  mainFlushBuffer = () => {
+    clearTimeout(silenceTimer);
+    if(finalBuffer.trim()){
+      const el=TIMER_DURATION-timerSecondsLeft;
+      const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
+      entries.push({id:nextId++,label:currentSpeaker,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
+      renderEntries(); enableBtns(); finalBuffer=''; liveEl.textContent='';
+    }
+  };
+
   speechRecognition.onresult=event=>{
     let interim='',final='';
     for(let i=event.resultIndex;i<event.results.length;i++){
@@ -1093,6 +1110,17 @@ function startExamSpeechRecognition(){
   const liveEl=document.getElementById('examLiveText');
   liveEl.classList.add('show');
   let finalBuffer='', silenceTimer=null;
+
+  examFlushBuffer = () => {
+    clearTimeout(silenceTimer);
+    if(finalBuffer.trim()){
+      const el2=EXAM_DURATION-examSecondsLeft;
+      const mm=Math.floor(el2/60).toString().padStart(2,'0'), ss=(el2%60).toString().padStart(2,'0');
+      examEntries.push({id:examNextId++,label:examCurrentSpeaker,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
+      renderExamEntries(); finalBuffer=''; liveEl.textContent='';
+    }
+  };
+
   examSpeechRecognition.onresult=e=>{
     let interim='';
     for(let i=e.resultIndex;i<e.results.length;i++){
@@ -1103,12 +1131,11 @@ function startExamSpeechRecognition(){
     if(finalBuffer.trim()){
       liveEl.textContent='✓ '+finalBuffer;
       clearTimeout(silenceTimer);
-      const speakerSnapshot = examCurrentSpeaker; // タイムアウト前にスナップショット
       silenceTimer=setTimeout(()=>{
         if(finalBuffer.trim()){
           const el2=EXAM_DURATION-examSecondsLeft;
           const mm=Math.floor(el2/60).toString().padStart(2,'0'), ss=(el2%60).toString().padStart(2,'0');
-          examEntries.push({id:examNextId++,label:speakerSnapshot,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
+          examEntries.push({id:examNextId++,label:examCurrentSpeaker,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
           renderExamEntries(); finalBuffer=''; liveEl.textContent='';
         }
       },1800);
@@ -1162,9 +1189,10 @@ function toggleExamAudio(){
 
 // ─── 口頭試問 発言者切替 ───
 function switchExamSpeaker(){
+  if(examFlushBuffer) examFlushBuffer(); // 切替前に現在の発言を確定
   examCurrentSpeaker = examCurrentSpeaker === 'Q' ? 'A' : 'Q';
   updateExamSpeakerBar();
-  toast(examCurrentSpeaker === 'Q' ? '🎤 Q 試験官 に切替' : '🎤 A 自分 に切替');
+  toast(examCurrentSpeaker === 'Q' ? '🎤 Q 試験官' : '🎤 A 自分');
 }
 function updateExamSpeakerBar(){
   const bar = document.getElementById('examSpeakerBar');
