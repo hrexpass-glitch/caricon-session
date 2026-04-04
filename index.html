@@ -295,22 +295,6 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     </div>
   </div>
 
-<div id="exam-print-table" style="display:none;padding:0 12px">
-  <div style="font-family:'Noto Serif JP',serif;font-size:13px;font-weight:600;margin:8px 0 4px;border-bottom:2px solid #333;padding-bottom:4px">口頭試問記録</div>
-  <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:6px">
-    <thead>
-      <tr style="background:#f2f2f0">
-        <th style="border:1px solid #ccc;padding:5px;width:28px;text-align:center">番号</th>
-        <th style="border:1px solid #ccc;padding:5px;width:44px;text-align:center">発言者</th>
-        <th style="border:1px solid #ccc;padding:5px;width:36px;text-align:center">時刻</th>
-        <th style="border:1px solid #ccc;padding:5px">内容</th>
-        <th style="border:1px solid #ccc;padding:5px;width:28%">メモ・気づき</th>
-      </tr>
-    </thead>
-    <tbody id="exam-pt-body"></tbody>
-  </table>
-</div>
-
 <div id="print-table" style="display:none;padding:0 12px">
   <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:8px">
     <thead>
@@ -324,6 +308,22 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
       </tr>
     </thead>
     <tbody id="pt-body"></tbody>
+  </table>
+</div>
+
+<div id="exam-print-table" style="display:none;padding:0 12px;margin-top:16px">
+  <div style="font-family:'Noto Serif JP',serif;font-size:13px;font-weight:600;margin:8px 0 4px;border-bottom:2px solid #333;padding-bottom:4px">口頭試問記録</div>
+  <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:6px">
+    <thead>
+      <tr style="background:#f2f2f0">
+        <th style="border:1px solid #ccc;padding:5px;width:28px;text-align:center">番号</th>
+        <th style="border:1px solid #ccc;padding:5px;width:44px;text-align:center">発言者</th>
+        <th style="border:1px solid #ccc;padding:5px;width:36px;text-align:center">時刻</th>
+        <th style="border:1px solid #ccc;padding:5px">内容</th>
+        <th style="border:1px solid #ccc;padding:5px;width:28%">メモ・気づき</th>
+      </tr>
+    </thead>
+    <tbody id="exam-pt-body"></tbody>
   </table>
 </div>
 
@@ -414,7 +414,6 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     <div class="sec-lbl">口頭試問 操作</div>
     <button class="action-btn" id="examCorrectBtn" onclick="showExamCorrection()" disabled>⇄ Q/Aラベルずれを一括訂正</button>
     <button class="action-btn" onclick="addExamRow()">＋ 行を手動追加</button>
-    <button class="action-btn" id="examPdfBtn" onclick="downloadExamPdf()" disabled>↓ 口頭試問PDF出力</button>
   </div>
 
   <div class="corr-bar" id="examCorrBar">
@@ -946,6 +945,7 @@ function setStatus(type,text){
 // ─── PDF ───
 function downloadPdf(){
   const ccN=document.getElementById('ccName').value||'CC', clN=document.getElementById('clName').value||'CL';
+  // 面談テーブル
   document.getElementById('pt-body').innerHTML=entries.map((e,i)=>{
     const lc=e.label==='CC'?'#2d7a5e':'#5a4a8e', name=e.label==='CC'?ccN:clN;
     return '<tr style="page-break-inside:avoid">'
@@ -957,9 +957,27 @@ function downloadPdf(){
       +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#8a5510">'+(e.advice||'').replace(/</g,'&lt;')+'</td>'
       +'</tr>';
   }).join('');
-  const pt=document.getElementById('print-table'); pt.style.display='block';
+  // 口頭試問テーブル（データがある場合のみ表示）
+  const examPt=document.getElementById('exam-print-table');
+  if(examEntries.length>0){
+    document.getElementById('exam-pt-body').innerHTML=examEntries.map((e,i)=>{
+      const isQ=e.label==='Q', lc=isQ?'#2d7a5e':'#5a4a8e', name=isQ?'Q 試験官':'A 自分';
+      return '<tr style="page-break-inside:avoid">'
+        +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;color:#888;font-size:10px">'+String(i+1).padStart(2,'0')+'</td>'
+        +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center"><span style="display:inline-block;background:'+lc+';color:#fff;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:3px">'+e.label+'</span><br><span style="font-size:9px;color:#666">'+name+'</span></td>'
+        +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;font-size:10px;color:#888">'+(e.time||'—')+'</td>'
+        +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6">'+(e.text||'').replace(/</g,'&lt;')+'</td>'
+        +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#444">'+(e.notes||'').replace(/</g,'&lt;')+'</td>'
+        +'</tr>';
+    }).join('');
+    examPt.style.display='block';
+  }
+  document.getElementById('print-table').style.display='block';
   document.getElementById('memoBody').classList.add('open'); document.getElementById('memoToggle').classList.add('open');
-  window.onafterprint=()=>{pt.style.display='none';};
+  window.onafterprint=()=>{
+    document.getElementById('print-table').style.display='none';
+    examPt.style.display='none';
+  };
   requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
 }
 
@@ -1175,7 +1193,6 @@ function renderExamEntries(){
   const counter=document.getElementById('examEntryCounter');
   if(!examEntries.length){empty.style.display='block';wrap.style.display='none';counter.textContent='—';return;}
   empty.style.display='none'; wrap.style.display='block'; counter.textContent=examEntries.length+' 件';
-  document.getElementById('examPdfBtn').disabled=false;
   document.getElementById('examCorrectBtn').disabled=false;
   const examSel=document.getElementById('examCorrFrom');
   if(examSel) examSel.innerHTML='<option value="">番号を選択</option>'+examEntries.map((e,i)=>`<option value="${i}">${String(i+1).padStart(2,'0')} (${e.label}): ${e.text.slice(0,18)}…</option>`).join('');
@@ -1293,25 +1310,6 @@ function applyExamCorrection(){
 }
 
 // ─── 口頭試問 PDF ───
-function downloadExamPdf(){
-  const ccN=document.getElementById('ccName').value||'CC';
-  document.getElementById('exam-pt-body').innerHTML=examEntries.map((e,i)=>{
-    const isQ=e.label==='Q';
-    const lc=isQ?'#2d7a5e':'#5a4a8e';
-    const name=isQ?'Q 試験官':'A 自分';
-    return '<tr style="page-break-inside:avoid">'
-      +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;color:#888;font-size:10px">'+String(i+1).padStart(2,'0')+'</td>'
-      +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center"><span style="display:inline-block;background:'+lc+';color:#fff;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:3px">'+e.label+'</span><br><span style="font-size:9px;color:#666">'+name+'</span></td>'
-      +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;font-size:10px;color:#888">'+(e.time||'—')+'</td>'
-      +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6">'+(e.text||'').replace(/</g,'&lt;')+'</td>'
-      +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#444">'+(e.notes||'').replace(/</g,'&lt;')+'</td>'
-      +'</tr>';
-  }).join('');
-  const pt=document.getElementById('exam-print-table'); pt.style.display='block';
-  document.getElementById('memoBody').classList.add('open'); document.getElementById('memoToggle').classList.add('open');
-  window.onafterprint=()=>{pt.style.display='none';};
-  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
-}
 
 // ─── カスタムオーディオプレーヤー ───
 function fmtTime(ms){
