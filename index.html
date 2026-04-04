@@ -236,6 +236,10 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
       <div class="speaker-name cc" id="speakerName">CC</div>
       <button class="switch-btn to-cl" id="switchBtn" onclick="switchSpeaker()">CLに切替</button>
     </div>
+    <button class="btn btn-full" id="fixLastBtn" onclick="fixLastEntry()" disabled
+      style="font-size:12px;padding:8px;margin-bottom:8px;background:var(--surface2);color:var(--muted)">
+      ↩ 直前の発言のラベルを修正
+    </button>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0">
       <button class="btn btn-full btn-danger" id="endBtn" onclick="endSession()" disabled style="font-size:13px;padding:11px">⏹ 終了・録音確定</button>
@@ -365,6 +369,10 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
       <div class="speaker-name cc" id="examSpeakerName">Q 試験官</div>
       <button class="switch-btn to-cl" id="examSwitchBtn" onclick="switchExamSpeaker()">A 自分に切替</button>
     </div>
+    <button class="btn btn-full" id="examFixLastBtn" onclick="fixLastExamEntry()" disabled
+      style="font-size:12px;padding:8px;margin-bottom:8px;background:var(--surface2);color:var(--muted)">
+      ↩ 直前の発言のラベルを修正
+    </button>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0">
       <button class="btn btn-full btn-danger" id="examEndBtn" onclick="endExamSession()" disabled style="font-size:13px;padding:11px">⏹ 終了・録音確定</button>
@@ -830,9 +838,11 @@ function updateSpeakerBar() {
   }
 }
 function switchSpeaker() {
-  if(mainFlushBuffer) mainFlushBuffer(); // 切替前に現在の発言を確定
+  if(mainFlushBuffer) mainFlushBuffer(); // バッファを即フラッシュ
   currentSpeaker=currentSpeaker==='CC'?'CL':'CC';
   updateSpeakerBar(); toast(currentSpeaker+' に切り替えました');
+  // 認識エンジンをリセット（古いspeakerの未確定結果を破棄）
+  if(speechRecognition){ try{speechRecognition.stop();}catch(e){} }
 }
 
 // ─── Speech ───
@@ -852,6 +862,7 @@ function startSpeechRecognition() {
       const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
       entries.push({id:nextId++,label:spk,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
       renderEntries(); enableBtns(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
+          const flb=document.getElementById('fixLastBtn'); if(flb) flb.disabled=false;
     }
   };
 
@@ -874,8 +885,9 @@ function startSpeechRecognition() {
           const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
           entries.push({id:nextId++,label:spk,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
           renderEntries(); enableBtns(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
+          const flb=document.getElementById('fixLastBtn'); if(flb) flb.disabled=false;
         }
-      },1800);
+      },800);
     }
   };
   speechRecognition.onerror=()=>{};
@@ -1127,6 +1139,7 @@ function startExamSpeechRecognition(){
       const mm=Math.floor(el2/60).toString().padStart(2,'0'), ss=(el2%60).toString().padStart(2,'0');
       examEntries.push({id:examNextId++,label:spk,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
       renderExamEntries(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
+          const eflb=document.getElementById('examFixLastBtn'); if(eflb) eflb.disabled=false;
     }
   };
 
@@ -1149,8 +1162,9 @@ function startExamSpeechRecognition(){
           const mm=Math.floor(el2/60).toString().padStart(2,'0'), ss=(el2%60).toString().padStart(2,'0');
           examEntries.push({id:examNextId++,label:spk,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
           renderExamEntries(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
+          const eflb=document.getElementById('examFixLastBtn'); if(eflb) eflb.disabled=false;
         }
-      },1800);
+      },800);
     }
   };
   examSpeechRecognition.onerror=()=>{};
@@ -1201,10 +1215,12 @@ function toggleExamAudio(){
 
 // ─── 口頭試問 発言者切替 ───
 function switchExamSpeaker(){
-  if(examFlushBuffer) examFlushBuffer(); // 切替前に現在の発言を確定
+  if(examFlushBuffer) examFlushBuffer(); // バッファを即フラッシュ
   examCurrentSpeaker = examCurrentSpeaker === 'Q' ? 'A' : 'Q';
   updateExamSpeakerBar();
   toast(examCurrentSpeaker === 'Q' ? '🎤 Q 試験官' : '🎤 A 自分');
+  // 認識エンジンをリセット（古いspeakerの未確定結果を破棄）
+  if(examSpeechRecognition){ try{examSpeechRecognition.stop();}catch(e){} }
 }
 function updateExamSpeakerBar(){
   const bar = document.getElementById('examSpeakerBar');
@@ -1251,6 +1267,23 @@ function _doDownloadExamAudio(blob){
 function setExamStatus(type,text){
   document.getElementById('examStatusBar').className='status'+(type?' '+type:'');
   document.getElementById('examStatusTxt').textContent=text;
+}
+
+// ─── 直前エントリのラベル修正 ───
+function fixLastEntry(){
+  if(!entries.length) return;
+  const last = entries[entries.length-1];
+  last.label = last.label==='CC' ? 'CL' : 'CC';
+  renderEntries();
+  toast('直前の発言を ' + last.label + ' に修正しました ✓');
+}
+
+function fixLastExamEntry(){
+  if(!examEntries.length) return;
+  const last = examEntries[examEntries.length-1];
+  last.label = last.label==='Q' ? 'A' : 'Q';
+  renderExamEntries();
+  toast('直前の発言を ' + (last.label==='Q'?'Q 試験官':'A 自分') + ' に修正しました ✓');
 }
 
 // ─── 口頭試問 一括訂正 ───
