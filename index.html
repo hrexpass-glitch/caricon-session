@@ -153,7 +153,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 .custom-audio-time { font-size:11px; color:var(--muted); text-align:right; }
 
 @media print {
-  .hdr-back,.hdr-btn,.fab,#card-timer,#card-actions,#card-exam,#card-exam-transcript,#card-exam-actions,
+  .hdr-back,.hdr-btn,.fab,#card-timer,#card-actions,#card-exam,#card-exam-transcript,#card-exam-actions,#card-pdf,
   .corr-bar,.examCorrBar,.add-row-btn,.speaker-bar,.live-text,.status,
   .del-btn,.count-badge,#card-transcript,.audio-player{display:none!important;}
   body{font-size:11px!important;background:#fff!important;}
@@ -271,7 +271,6 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     <div class="sec-lbl">操作</div>
     <button class="action-btn" id="correctBtn" onclick="showCorrection()" disabled>⇄ ラベルずれを一括訂正</button>
     <button class="action-btn" onclick="addRow()">＋ 行を手動追加</button>
-    <button class="action-btn" id="pdfBtn" onclick="downloadPdf()" disabled>↓ PDF出力</button>
   </div>
 
   <div class="corr-bar" id="corrBar">
@@ -335,6 +334,12 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     <div class="memo-body" id="memoBody">
       <textarea class="memo-ta" id="memoText" placeholder="全体を通じての気づき、改善点、良かった点などを記録…"></textarea>
     </div>
+  </div>
+
+  <div class="card" id="card-pdf" style="border-color:var(--ac-bd);background:var(--ac-lt)">
+    <button class="btn btn-primary btn-full" id="pdfBtn" onclick="downloadPdf()" style="font-size:14px;padding:13px">
+      ↓ PDF出力（面談＋口頭試問）
+    </button>
   </div>
 
   <!-- 口頭試問カード -->
@@ -921,7 +926,7 @@ function addRow(){entries.push({id:nextId++,label:currentSpeaker||'CC',text:'',n
 function toggleLabel(id){const e=entries.find(e=>e.id===id);if(e){e.label=e.label==='CC'?'CL':'CC';renderEntries();}}
 function updateField(id,field,val){const e=entries.find(e=>e.id===id);if(e)e[field]=val;}
 function delEntry(id){if(!confirm('この行を削除しますか？'))return;entries=entries.filter(e=>e.id!==id);renderEntries();}
-function enableBtns(){document.getElementById('pdfBtn').disabled=false;document.getElementById('correctBtn').disabled=false;}
+function enableBtns(){document.getElementById('correctBtn').disabled=false;}
 
 // ─── Correction ───
 function showCorrection(){document.getElementById('corrBar').classList.add('show');}
