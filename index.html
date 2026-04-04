@@ -706,15 +706,8 @@ function beep() {
 async function startRec() {
   try {
     audioStream = await navigator.mediaDevices.getUserMedia({audio:true});
-    // GainNode経由でMediaRecorder接続（pause中はgain=0でミュート）
-    audioCtx = new AudioContext();
-    const src = audioCtx.createMediaStreamSource(audioStream);
-    gainNode = audioCtx.createGain();
-    gainNode.gain.value = 1;
-    const dest = audioCtx.createMediaStreamDestination();
-    src.connect(gainNode); gainNode.connect(dest);
     allAudioChunks = [];
-    mediaRecorder = new MediaRecorder(dest.stream);
+    mediaRecorder = new MediaRecorder(audioStream);
     mediaRecorder.ondataavailable = e => { if(e.data.size>0) allAudioChunks.push(e.data); };
     mediaRecorder.start(500);
     recDurationMs=0; recStartedAt=Date.now();
@@ -726,7 +719,7 @@ async function startRec() {
 
 function pauseRec() {
   if(recStartedAt){ recDurationMs += Date.now()-recStartedAt; recStartedAt=null; }
-  if(gainNode) gainNode.gain.value = 0; // 一時停止中はミュート（無音録音）
+  if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.pause();
   isPaused=true;
   if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
   document.getElementById('liveText').classList.remove('show');
@@ -734,7 +727,7 @@ function pauseRec() {
 
 function resumeRec() {
   recStartedAt=Date.now();
-  if(gainNode) gainNode.gain.value = 1; // ミュート解除
+  if(mediaRecorder && mediaRecorder.state==='paused') mediaRecorder.resume();
   isPaused=false; startSpeechRecognition();
 }
 
@@ -772,8 +765,6 @@ function _doDownloadAudio(blob){
 
 function finalizeRec() {
   const doFinalize = () => {
-    if(gainNode){gainNode.disconnect(); gainNode=null;}
-    if(audioCtx){audioCtx.close(); audioCtx=null;}
     if(audioStream){audioStream.getTracks().forEach(t=>t.stop()); audioStream=null;}
     isRecording=false; isPaused=false;
     if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
@@ -1080,14 +1071,8 @@ function resumeExamBoth(){
 async function startExamRec(){
   try{
     examAudioStream=await navigator.mediaDevices.getUserMedia({audio:true});
-    examAudioCtx = new AudioContext();
-    const examSrc = examAudioCtx.createMediaStreamSource(examAudioStream);
-    examGainNode = examAudioCtx.createGain();
-    examGainNode.gain.value = 1;
-    const examDest = examAudioCtx.createMediaStreamDestination();
-    examSrc.connect(examGainNode); examGainNode.connect(examDest);
     examAllChunks=[];
-    examMediaRecorder=new MediaRecorder(examDest.stream);
+    examMediaRecorder=new MediaRecorder(examAudioStream);
     examMediaRecorder.ondataavailable=e=>{ if(e.data.size>0) examAllChunks.push(e.data); };
     examMediaRecorder.start(500);
     examRecDurationMs=0; examRecStartedAt=Date.now();
@@ -1098,7 +1083,7 @@ async function startExamRec(){
 
 function pauseExamRec(){
   if(examRecStartedAt){ examRecDurationMs += Date.now()-examRecStartedAt; examRecStartedAt=null; }
-  if(examGainNode) examGainNode.gain.value = 0; // ミュート
+  if(examMediaRecorder && examMediaRecorder.state==='recording') examMediaRecorder.pause();
   isExamPaused=true;
   if(examSpeechRecognition){try{examSpeechRecognition.stop();}catch(e){} examSpeechRecognition=null;}
   document.getElementById('examLiveText').classList.remove('show');
@@ -1106,14 +1091,12 @@ function pauseExamRec(){
 
 function resumeExamRec(){
   examRecStartedAt=Date.now();
-  if(examGainNode) examGainNode.gain.value = 1; // ミュート解除
+  if(examMediaRecorder && examMediaRecorder.state==='paused') examMediaRecorder.resume();
   isExamPaused=false; startExamSpeechRecognition();
 }
 
 function finalizeExamRec(){
   const doFinalize=()=>{
-    if(examGainNode){examGainNode.disconnect(); examGainNode=null;}
-    if(examAudioCtx){examAudioCtx.close(); examAudioCtx=null;}
     if(examAudioStream){examAudioStream.getTracks().forEach(t=>t.stop()); examAudioStream=null;}
     isExamRecording=false; isExamPaused=false;
     if(examSpeechRecognition){try{examSpeechRecognition.stop();}catch(e){} examSpeechRecognition=null;}
