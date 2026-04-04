@@ -236,10 +236,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
       <div class="speaker-name cc" id="speakerName">CC</div>
       <button class="switch-btn to-cl" id="switchBtn" onclick="switchSpeaker()">CLに切替</button>
     </div>
-    <button class="btn btn-full" id="fixLastBtn" onclick="fixLastEntry()" disabled
-      style="font-size:12px;padding:8px;margin-bottom:8px;background:var(--surface2);color:var(--muted)">
-      ↩ 直前の発言のラベルを修正
-    </button>
+
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0">
       <button class="btn btn-full btn-danger" id="endBtn" onclick="endSession()" disabled style="font-size:13px;padding:11px">⏹ 終了・録音確定</button>
@@ -369,10 +366,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
       <div class="speaker-name cc" id="examSpeakerName">Q 試験官</div>
       <button class="switch-btn to-cl" id="examSwitchBtn" onclick="switchExamSpeaker()">A 自分に切替</button>
     </div>
-    <button class="btn btn-full" id="examFixLastBtn" onclick="fixLastExamEntry()" disabled
-      style="font-size:12px;padding:8px;margin-bottom:8px;background:var(--surface2);color:var(--muted)">
-      ↩ 直前の発言のラベルを修正
-    </button>
+
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0">
       <button class="btn btn-full btn-danger" id="examEndBtn" onclick="endExamSession()" disabled style="font-size:13px;padding:11px">⏹ 終了・録音確定</button>
@@ -481,6 +475,7 @@ let isRecording = false, isPaused = false;
 let mediaRecorder = null, audioStream = null;
 let allAudioChunks = [], audioBlob = null;
 let recStartedAt = null, recDurationMs = 0; // 録音時間を自前計測
+let audioCtx = null, gainNode = null; // 一時停止中ミュート用
 let savedChunks = []; // 一時停止をまたいで蓄積
 // 口頭試問
 let EXAM_DURATION = 5 * 60;
@@ -490,6 +485,7 @@ let isExamRecording = false, isExamPaused = false;
 let examMediaRecorder = null, examAudioStream = null;
 let examAllChunks = [], examSavedChunks = [], examAudioBlob = null;
 let examRecStartedAt = null, examRecDurationMs = 0;
+let examAudioCtx = null, examGainNode = null;
 let examFlushBuffer = null; // 切替時にバッファを強制フラッシュ
 let mainFlushBuffer = null; // 面談側も同様
 let examSpeechRecognition = null;
@@ -710,8 +706,15 @@ function beep() {
 async function startRec() {
   try {
     audioStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    // GainNode経由でMediaRecorder接続（pause中はgain=0でミュート）
+    audioCtx = new AudioContext();
+    const src = audioCtx.createMediaStreamSource(audioStream);
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = 1;
+    const dest = audioCtx.createMediaStreamDestination();
+    src.connect(gainNode); gainNode.connect(dest);
     allAudioChunks = [];
-    mediaRecorder = new MediaRecorder(audioStream);
+    mediaRecorder = new MediaRecorder(dest.stream);
     mediaRecorder.ondataavailable = e => { if(e.data.size>0) allAudioChunks.push(e.data); };
     mediaRecorder.start(500);
     recDurationMs=0; recStartedAt=Date.now();
@@ -723,7 +726,7 @@ async function startRec() {
 
 function pauseRec() {
   if(recStartedAt){ recDurationMs += Date.now()-recStartedAt; recStartedAt=null; }
-  if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.pause();
+  if(gainNode) gainNode.gain.value = 0; // 一時停止中はミュート（無音録音）
   isPaused=true;
   if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
   document.getElementById('liveText').classList.remove('show');
@@ -731,7 +734,7 @@ function pauseRec() {
 
 function resumeRec() {
   recStartedAt=Date.now();
-  if(mediaRecorder && mediaRecorder.state==='paused') mediaRecorder.resume();
+  if(gainNode) gainNode.gain.value = 1; // ミュート解除
   isPaused=false; startSpeechRecognition();
 }
 
@@ -769,6 +772,8 @@ function _doDownloadAudio(blob){
 
 function finalizeRec() {
   const doFinalize = () => {
+    if(gainNode){gainNode.disconnect(); gainNode=null;}
+    if(audioCtx){audioCtx.close(); audioCtx=null;}
     if(audioStream){audioStream.getTracks().forEach(t=>t.stop()); audioStream=null;}
     isRecording=false; isPaused=false;
     if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
@@ -1075,8 +1080,14 @@ function resumeExamBoth(){
 async function startExamRec(){
   try{
     examAudioStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    examAudioCtx = new AudioContext();
+    const examSrc = examAudioCtx.createMediaStreamSource(examAudioStream);
+    examGainNode = examAudioCtx.createGain();
+    examGainNode.gain.value = 1;
+    const examDest = examAudioCtx.createMediaStreamDestination();
+    examSrc.connect(examGainNode); examGainNode.connect(examDest);
     examAllChunks=[];
-    examMediaRecorder=new MediaRecorder(examAudioStream);
+    examMediaRecorder=new MediaRecorder(examDest.stream);
     examMediaRecorder.ondataavailable=e=>{ if(e.data.size>0) examAllChunks.push(e.data); };
     examMediaRecorder.start(500);
     examRecDurationMs=0; examRecStartedAt=Date.now();
@@ -1087,7 +1098,7 @@ async function startExamRec(){
 
 function pauseExamRec(){
   if(examRecStartedAt){ examRecDurationMs += Date.now()-examRecStartedAt; examRecStartedAt=null; }
-  if(examMediaRecorder && examMediaRecorder.state==='recording') examMediaRecorder.pause();
+  if(examGainNode) examGainNode.gain.value = 0; // ミュート
   isExamPaused=true;
   if(examSpeechRecognition){try{examSpeechRecognition.stop();}catch(e){} examSpeechRecognition=null;}
   document.getElementById('examLiveText').classList.remove('show');
@@ -1095,12 +1106,14 @@ function pauseExamRec(){
 
 function resumeExamRec(){
   examRecStartedAt=Date.now();
-  if(examMediaRecorder && examMediaRecorder.state==='paused') examMediaRecorder.resume();
+  if(examGainNode) examGainNode.gain.value = 1; // ミュート解除
   isExamPaused=false; startExamSpeechRecognition();
 }
 
 function finalizeExamRec(){
   const doFinalize=()=>{
+    if(examGainNode){examGainNode.disconnect(); examGainNode=null;}
+    if(examAudioCtx){examAudioCtx.close(); examAudioCtx=null;}
     if(examAudioStream){examAudioStream.getTracks().forEach(t=>t.stop()); examAudioStream=null;}
     isExamRecording=false; isExamPaused=false;
     if(examSpeechRecognition){try{examSpeechRecognition.stop();}catch(e){} examSpeechRecognition=null;}
