@@ -763,12 +763,10 @@ function resetTimerFull() {
 function onTimerEnd() {
   beep();
   document.getElementById('timerModal').classList.add('show');
-  finalizeRec();
-  setStatus('done','タイマー終了');
-  const btn = document.getElementById('startBtn');
-  btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
-  btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
-  saveSession(); toast('タイマー終了 — 自動保存しました ✓');
+  // タイマー終了時に自動で確定（endSessionと同等）
+  endSession();
+  saveSession();
+  toast('タイマー終了 — 録音・逐語録を自動確定しました ✓');
 }
 
 function dismissModal() { document.getElementById('timerModal').classList.remove('show'); }
@@ -1175,11 +1173,11 @@ function startExamCountdown(){
 }
 
 function onExamTimerEnd(){
-  beep(); finalizeExamRec();
+  beep();
   document.getElementById('examTimerModal').classList.add('show');
-  setExamStatus('done','口頭試問終了');
-  const btn=document.getElementById('examStartBtn');
-  btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
+  // タイマー終了時に自動で確定
+  endExamSession();
+  toast('口頭試問終了 — 録音・記録を自動確定しました ✓');
 }
 
 function resetExamTimerFull(){
