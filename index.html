@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>面談記録メーカー</title>
+<title>面談記録 for キャリコン</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -825,15 +825,17 @@ function endSession() {
   const btn = document.getElementById('startBtn');
   btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
   btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
+  // タイマー・録音操作をグレーアウト（再生・ダウンロードは除く）
   btn.disabled = true;
   document.getElementById('endBtn').disabled = true;
   document.getElementById('resetBtn').disabled = true;
-  document.getElementById('switchBtn').disabled = true;
+  document.getElementById('switchBtn').disabled = true; // 発言者切替もグレーアウト
   document.getElementById('timerRange').disabled = true;
-  document.querySelectorAll('#card-timer .btn').forEach(b => { b.disabled = true; });
+  // プリセットボタンもグレーアウト
+  document.querySelectorAll('#card-timer .btn:not(#audioPlayBtn):not([onclick*="downloadAudio"]):not([onclick*="toggleAudio"])').forEach(b => { b.disabled = true; });
   finalizeRec();
-  setStatus('done','録音確定済み — 新しい面談を作成すると再開できます');
-  toast('録音を確定しました');
+  setStatus('done','録音・逐語録 確定済み');
+  toast('録音と逐語録を確定しました');
 }
 
 // ─── 録音中でも途中ダウンロード ───
@@ -1054,6 +1056,7 @@ function setStatus(type,text){
 
 // ─── PDF ───
 function downloadPdf(){
+  saveSession(); // PDF出力前に自動保存
   const ccN=document.getElementById('ccName').value||'CC', clN=document.getElementById('clName').value||'CL';
   // 面談テーブル
   document.getElementById('pt-body').innerHTML=entries.map((e,i)=>{
@@ -1090,9 +1093,12 @@ function downloadPdf(){
   };
   if(window.ReactNativeWebView){
     // React Native WebView内：expo-printで出力
+    document.getElementById('memoBody').classList.add('open');
+    const memoVal = document.getElementById('memoText').value;
+    const memoHtml = memoVal ? '<div style="margin-top:12px;font-size:10px;border-top:1px solid #ccc;padding-top:8px"><strong>総合メモ・フィードバック</strong><p style="white-space:pre-wrap;margin-top:4px">' + memoVal.replace(/</g,'&lt;') + '</p></div>' : '';
     const html = document.getElementById('print-table').outerHTML
       + (examEntries.length>0 ? document.getElementById('exam-print-table').outerHTML : '')
-      + document.getElementById('card-memo').outerHTML;
+      + memoHtml;
     window.ReactNativeWebView.postMessage(JSON.stringify({type:'print', html:html}));
     document.getElementById('print-table').style.display='none';
     if(examEntries.length>0) document.getElementById('exam-print-table').style.display='none';
@@ -1398,12 +1404,12 @@ function endExamSession(){
   btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
   btn.disabled = true;
   document.getElementById('examEndBtn').disabled = true;
-  document.getElementById('examSwitchBtn').disabled = true;
+  document.getElementById('examSwitchBtn').disabled = true; // 発言者切替グレーアウト
   document.getElementById('examRange').disabled = true;
-  document.querySelectorAll('#card-exam .btn').forEach(b => { b.disabled = true; });
+  document.querySelectorAll('#card-exam .btn:not(#examAudioPlayBtn):not([onclick*="downloadExamAudio"]):not([onclick*="toggleExamAudio"])').forEach(b => { b.disabled = true; });
   finalizeExamRec();
-  setExamStatus('done','録音確定済み — 新しい面談を作成すると再開できます');
-  toast('口頭試問の録音を確定しました');
+  setExamStatus('done','録音・記録 確定済み');
+  toast('口頭試問の録音と記録を確定しました');
 }
 
 // ─── 口頭試問 途中ダウンロード ───
