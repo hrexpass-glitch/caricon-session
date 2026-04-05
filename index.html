@@ -633,6 +633,15 @@ function newSession() {
   renderExamEntries();
   setSliderVal(15, false);
   setExamSliderVal(5);
+  // 確定後グレーアウトされたボタンを全て有効化
+  ['startBtn','endBtn','resetBtn','switchBtn','examStartBtn','examEndBtn','examSwitchBtn'].forEach(function(id){
+    var el=document.getElementById(id); if(el){ el.disabled=false; }
+  });
+  var tr=document.getElementById('timerRange'); if(tr) tr.disabled=false;
+  var er=document.getElementById('examRange'); if(er) er.disabled=false;
+  document.querySelectorAll('#card-timer .btn, #card-exam .btn').forEach(function(b){ b.disabled=false; });
+  document.getElementById('endBtn').disabled=true; // スタート前はend無効
+  document.getElementById('examEndBtn').disabled=true;
   currentSpeaker = 'CC'; updateSpeakerBar(); renderEntries(); showPage('page-session');
 }
 
@@ -794,7 +803,12 @@ function pauseRec() {
   if(recStartedAt){ recDurationMs += Date.now()-recStartedAt; recStartedAt=null; }
   if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.pause();
   isPaused=true;
-  if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
+  if(window._useNativeSpeech){
+    window._speechCallback=null;
+    window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({type:'stopSpeech'}));
+  } else {
+    if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
+  }
   document.getElementById('liveText').classList.remove('show');
 }
 
@@ -811,9 +825,14 @@ function endSession() {
   const btn = document.getElementById('startBtn');
   btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
   btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
+  btn.disabled = true;
   document.getElementById('endBtn').disabled = true;
+  document.getElementById('resetBtn').disabled = true;
+  document.getElementById('switchBtn').disabled = true;
+  document.getElementById('timerRange').disabled = true;
+  document.querySelectorAll('#card-timer .btn').forEach(b => { b.disabled = true; });
   finalizeRec();
-  setStatus('done','録音確定済み');
+  setStatus('done','録音確定済み — 新しい面談を作成すると再開できます');
   toast('録音を確定しました');
 }
 
@@ -925,12 +944,9 @@ function switchSpeaker() {
 
 // ─── Speech ───
 function startSpeechRecognition() {
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) return;
-  speechRecognition=new SR(); speechRecognition.lang='ja-JP'; speechRecognition.continuous=true; speechRecognition.interimResults=true;
   const liveEl=document.getElementById('liveText'); liveEl.classList.add('show');
   let finalBuffer='', silenceTimer=null;
-
-  let segmentSpeaker = null; // 話し始めの瞬間にスナップショット
+  let segmentSpeaker = null;
 
   mainFlushBuffer = () => {
     clearTimeout(silenceTimer);
@@ -940,21 +956,16 @@ function startSpeechRecognition() {
       const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
       entries.push({id:nextId++,label:spk,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
       renderEntries(); enableBtns(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
-          const flb=document.getElementById('fixLastBtn'); if(flb) flb.disabled=false;
     }
   };
 
-  speechRecognition.onresult=event=>{
-    let interim='',final='';
-    for(let i=event.resultIndex;i<event.results.length;i++){
-      const t=event.results[i][0].transcript;
-      if(event.results[i].isFinal) final+=t; else interim+=t;
-    }
-    // 話し始めの瞬間（最初のinterim）にspeakerを確定
-    if(interim && segmentSpeaker===null) segmentSpeaker=currentSpeaker;
-    if(interim) liveEl.textContent='🎤 '+interim;
-    if(final.trim()){
-      finalBuffer+=final; liveEl.textContent='✓ '+finalBuffer;
+  const onResult = (text, isFinal) => {
+    if(!isRecording || isPaused) return;
+    if(!isFinal){
+      if(segmentSpeaker===null) segmentSpeaker=currentSpeaker;
+      liveEl.textContent='🎤 '+text;
+    } else {
+      finalBuffer+=text; liveEl.textContent='✓ '+finalBuffer;
       clearTimeout(silenceTimer);
       const spk = segmentSpeaker || currentSpeaker;
       silenceTimer=setTimeout(()=>{
@@ -963,14 +974,30 @@ function startSpeechRecognition() {
           const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
           entries.push({id:nextId++,label:spk,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
           renderEntries(); enableBtns(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
-          const flb=document.getElementById('fixLastBtn'); if(flb) flb.disabled=false;
         }
       },800);
     }
   };
-  speechRecognition.onerror=()=>{};
-  speechRecognition.onend=()=>{ if(isRecording&&!isPaused) try{speechRecognition.start();}catch(e){} };
-  try{speechRecognition.start();}catch(e){}
+
+  if(window._useNativeSpeech){
+    window._speechCallback = onResult;
+    window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({type:'startSpeech'}));
+  } else {
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) return;
+    speechRecognition=new SR(); speechRecognition.lang='ja-JP'; speechRecognition.continuous=true; speechRecognition.interimResults=true;
+    speechRecognition.onresult=event=>{
+      let interim='',final='';
+      for(let i=event.resultIndex;i<event.results.length;i++){
+        const t=event.results[i][0].transcript;
+        if(event.results[i].isFinal) final+=t; else interim+=t;
+      }
+      if(interim) onResult(interim, false);
+      if(final.trim()) onResult(final, true);
+    };
+    speechRecognition.onerror=()=>{};
+    speechRecognition.onend=()=>{ if(isRecording&&!isPaused) try{speechRecognition.start();}catch(e){} };
+    try{speechRecognition.start();}catch(e){}
+  }
 }
 
 // ─── Entries ───
@@ -1242,15 +1269,10 @@ function finalizeExamRec(){
 
 // ─── 口頭試問 Speech Recognition ───
 function startExamSpeechRecognition(){
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR) return;
-  examSpeechRecognition=new SR();
-  examSpeechRecognition.lang='ja-JP'; examSpeechRecognition.continuous=true; examSpeechRecognition.interimResults=true;
   const liveEl=document.getElementById('examLiveText');
   liveEl.classList.add('show');
   let finalBuffer='', silenceTimer=null;
-
-  let segmentSpeaker = null; // 話し始めの瞬間にスナップショット
+  let segmentSpeaker = null;
 
   examFlushBuffer = () => {
     clearTimeout(silenceTimer);
@@ -1260,21 +1282,16 @@ function startExamSpeechRecognition(){
       const mm=Math.floor(el2/60).toString().padStart(2,'0'), ss=(el2%60).toString().padStart(2,'0');
       examEntries.push({id:examNextId++,label:spk,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
       renderExamEntries(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
-          const eflb=document.getElementById('examFixLastBtn'); if(eflb) eflb.disabled=false;
     }
   };
 
-  examSpeechRecognition.onresult=e=>{
-    let interim='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal) finalBuffer+=e.results[i][0].transcript;
-      else interim+=e.results[i][0].transcript;
-    }
-    // 話し始めの瞬間（最初のinterim）にspeakerを確定
-    if(interim && segmentSpeaker===null) segmentSpeaker=examCurrentSpeaker;
-    if(interim) liveEl.textContent='…'+interim;
-    if(finalBuffer.trim()){
-      liveEl.textContent='✓ '+finalBuffer;
+  const onResult = (text, isFinal) => {
+    if(!isExamRecording || isExamPaused) return;
+    if(!isFinal){
+      if(segmentSpeaker===null) segmentSpeaker=examCurrentSpeaker;
+      liveEl.textContent='…'+text;
+    } else {
+      finalBuffer+=text; liveEl.textContent='✓ '+finalBuffer;
       clearTimeout(silenceTimer);
       const spk = segmentSpeaker || examCurrentSpeaker;
       silenceTimer=setTimeout(()=>{
@@ -1283,14 +1300,31 @@ function startExamSpeechRecognition(){
           const mm=Math.floor(el2/60).toString().padStart(2,'0'), ss=(el2%60).toString().padStart(2,'0');
           examEntries.push({id:examNextId++,label:spk,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
           renderExamEntries(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
-          const eflb=document.getElementById('examFixLastBtn'); if(eflb) eflb.disabled=false;
         }
       },800);
     }
   };
-  examSpeechRecognition.onerror=()=>{};
-  examSpeechRecognition.onend=()=>{ if(isExamRecording&&!isExamPaused) try{examSpeechRecognition.start();}catch(e){} };
-  try{examSpeechRecognition.start();}catch(e){}
+
+  if(window._useNativeSpeech){
+    window._speechCallback = onResult;
+    window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({type:'startSpeech'}));
+  } else {
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR) return;
+    examSpeechRecognition=new SR();
+    examSpeechRecognition.lang='ja-JP'; examSpeechRecognition.continuous=true; examSpeechRecognition.interimResults=true; examSpeechRecognition.maxAlternatives=1;
+    examSpeechRecognition.onresult=e=>{
+      let interim='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        if(e.results[i].isFinal) onResult(e.results[i][0].transcript, true);
+        else interim+=e.results[i][0].transcript;
+      }
+      if(interim) onResult(interim, false);
+    };
+    examSpeechRecognition.onerror=()=>{};
+    examSpeechRecognition.onend=()=>{ if(isExamRecording&&!isExamPaused) try{examSpeechRecognition.start();}catch(e){} };
+    try{examSpeechRecognition.start();}catch(e){}
+  }
 }
 
 // ─── 口頭試問 Entries (Q/A) ───
@@ -1362,9 +1396,13 @@ function endExamSession(){
   clearInterval(examTimerInterval); isExamTimerRunning = false;
   const btn = document.getElementById('examStartBtn');
   btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
+  btn.disabled = true;
   document.getElementById('examEndBtn').disabled = true;
+  document.getElementById('examSwitchBtn').disabled = true;
+  document.getElementById('examRange').disabled = true;
+  document.querySelectorAll('#card-exam .btn').forEach(b => { b.disabled = true; });
   finalizeExamRec();
-  setExamStatus('done','録音確定済み');
+  setExamStatus('done','録音確定済み — 新しい面談を作成すると再開できます');
   toast('口頭試問の録音を確定しました');
 }
 
