@@ -129,15 +129,33 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 .audio-player audio{width:100%;margin-top:4px}
 .audio-label{font-size:11px;color:var(--muted);margin-bottom:4px}
 
-/* ─── タイマースライダー（accent-color方式・ブラウザ任せで位置ズレなし）─── */
-#timerRange {
-  width: 100%;
-  height: 6px;
-  cursor: pointer;
-  accent-color: var(--ac);
-  outline: none;
+/* ─── カスタムスライダー ─── */
+.cslider { position:relative; height:28px; cursor:pointer; }
+.cslider-track {
+  position:absolute; left:0; right:0; top:50%;
+  transform:translateY(-50%);
+  height:4px; background:var(--border2); border-radius:2px;
+  overflow:visible;
 }
-#timerRange:disabled { opacity: .4; cursor: not-allowed; }
+.cslider-fill {
+  position:absolute; left:0; top:0; bottom:0;
+  background:var(--ac); border-radius:2px;
+  width:50%; /* JS上書き */
+}
+.cslider-thumb {
+  position:absolute; top:50%;
+  left:50%; /* JS上書き */
+  transform:translate(-50%,-50%) !important;
+  width:20px; height:20px; border-radius:50%;
+  background:var(--ac); border:2.5px solid #fff;
+  box-shadow:0 1px 5px rgba(0,0,0,.25);
+  pointer-events:none;
+}
+.cslider input[type=range] {
+  position:absolute; inset:0; width:100%; height:100%;
+  opacity:0; cursor:pointer; margin:0;
+  -webkit-appearance:none; appearance:none;
+}
 
 
 /* ─── カスタムオーディオプレーヤー ─── */
@@ -221,8 +239,14 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
         <label style="margin-bottom:0">カスタム時間（分）</label>
         <span id="timerRangeVal" style="font-size:16px;font-weight:700;color:var(--ac)">15分</span>
       </div>
-      <input type="range" id="timerRange" min="0" max="28" value="14"
-             oninput="onRangeChange(this.value)" style="width:100%;display:block">
+      <div class="cslider">
+  <div class="cslider-track">
+    <div class="cslider-fill" id="timerFill"></div>
+    <div class="cslider-thumb" id="timerThumb"></div>
+  </div>
+  <input type="range" id="timerRange" min="0" max="30" value="15"
+    oninput="onRangeChange(this.value)">
+</div>
     </div>
 
     <div class="timer-num" id="timerDisplay">15:00</div>
@@ -356,8 +380,14 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
         <label style="margin-bottom:0">カスタム時間（分）</label>
         <span id="examRangeVal" style="font-size:16px;font-weight:700;color:var(--ac)">5分</span>
       </div>
-      <input type="range" id="examRange" min="0" max="8" value="4"
-             oninput="onExamRangeChange(this.value)" style="width:100%;display:block;accent-color:var(--ac)">
+      <div class="cslider">
+  <div class="cslider-track">
+    <div class="cslider-fill" id="examFill"></div>
+    <div class="cslider-thumb" id="examThumb"></div>
+  </div>
+  <input type="range" id="examRange" min="0" max="10" value="5"
+    oninput="onExamRangeChange(this.value)">
+</div>
     </div>
 
     <div class="timer-num" id="examTimerDisplay">05:00</div>
@@ -504,15 +534,24 @@ document.getElementById('sessionDate').value = new Date().toISOString().split('T
 // ・初期背景はCSSで50%固定済み
 // ・JS操作時のfillは (val-1)/28*100% のシンプル式（中央では完全一致）
 // min=0,max=28,value=14 → 14/28=50%が完全中央 → 表示はval+1=15分
-// accent-colorでブラウザ任せ → 位置計算不要・ズレなし
-let sliderVal = 14;
+let sliderVal = 15; // min=1,max=30 → 15が中央(50%)
+
+function updateRangeBg(el, val, maxVal) {
+  // val=0〜maxVal, 50%=中央, 100%=右端
+  const pct = (val / maxVal * 100).toFixed(1);
+  const isExam = el.id === 'examRange';
+  const fill  = document.getElementById(isExam ? 'examFill'  : 'timerFill');
+  const thumb = document.getElementById(isExam ? 'examThumb' : 'timerThumb');
+  if (fill)  fill.style.width = pct + '%';
+  if (thumb) thumb.style.left = pct + '%';
+}
 
 function setSliderVal(rawVal, triggerChange) {
-  rawVal = Math.max(0, Math.min(28, rawVal));
+  rawVal = Math.max(0, Math.min(30, rawVal));
   sliderVal = rawVal;
-  const mins = rawVal + 1;
+  const mins = Math.max(1, rawVal);
   const el = document.getElementById('timerRange');
-  if (el) el.value = sliderVal;
+  if (el) { el.value = rawVal; updateRangeBg(el, rawVal, 30); }
   document.getElementById('timerRangeVal').textContent = mins + '分';
   if (triggerChange) {
     TIMER_DURATION = mins * 60; timerSecondsLeft = TIMER_DURATION;
@@ -523,6 +562,14 @@ function setSliderVal(rawVal, triggerChange) {
 function onRangeChange(val) {
   if (isTimerRunning) return;
   setSliderVal(parseInt(val), true);
+}
+
+// showPage後にgradientを再計算
+function refreshSliderBg() {
+  const el = document.getElementById('timerRange');
+  if (el) updateRangeBg(el, sliderVal, 30);
+  const ex = document.getElementById('examRange');
+  if (ex) updateRangeBg(ex, parseInt(ex.value)||4, 9);
 }
 
 renderSessionList();
@@ -573,6 +620,8 @@ function newSession() {
   examEntries=[]; examNextId=1; examAudioBlob=null; examAllChunks=[];
   examCurrentSpeaker='Q'; finalizeExamRec(); resetExamTimerFull();
   renderExamEntries();
+  setSliderVal(15, false);
+  setExamSliderVal(5);
   currentSpeaker = 'CC'; updateSpeakerBar(); renderEntries(); showPage('page-session');
 }
 
@@ -594,7 +643,7 @@ function openSession(id) {
   examEntries=[]; examNextId=1; examAudioBlob=null; examAllChunks=[];
   examCurrentSpeaker='Q'; finalizeExamRec(); resetExamTimerFull();
   renderExamEntries();
-  resetTimerFull(); renderEntries();
+  setSliderVal(15, false); resetTimerFull(); renderEntries();
   if (entries.length) enableBtns();
   showPage('page-session');
 }
@@ -634,6 +683,15 @@ function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
+  if (id === 'page-session') {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        updateRangeBg(document.getElementById('timerRange'), sliderVal, 30);
+        const ex=document.getElementById('examRange');
+        if(ex) updateRangeBg(ex, parseInt(ex.value||'5'), 10);
+      });
+    });
+  }
 }
 
 // ─── Timer ───
@@ -642,7 +700,7 @@ function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).
 function setTimer(min) {
   if (isTimerRunning) return;
   TIMER_DURATION = min*60; timerSecondsLeft = TIMER_DURATION;
-  setSliderVal(Math.min(Math.max(min - 1, 0), 28), false);
+  setSliderVal(Math.min(Math.max(min, 0), 30), false);
   updateTimerUI(); toast(min+'分にセットしました');
 }
 
@@ -761,10 +819,19 @@ function downloadAudio(){
   toast('録音中のデータをダウンロードしました（終了後に完全版が取得できます）');
 }
 function _doDownloadAudio(blob){
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='録音_'+(document.getElementById('sessionDate').value||'recording').replace(/-/g,'')+'.webm';
-  a.click();
+  const filename='録音_'+(document.getElementById('sessionDate').value||'recording').replace(/-/g,'')+'.webm';
+  if(window.ReactNativeWebView){
+    const reader=new FileReader();
+    reader.onloadend=()=>{
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type:'saveAudio', data:reader.result, filename:filename
+      }));
+    };
+    reader.readAsDataURL(blob);
+  } else {
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+  }
 }
 
 function finalizeRec() {
@@ -983,7 +1050,17 @@ function downloadPdf(){
     document.getElementById('print-table').style.display='none';
     examPt.style.display='none';
   };
-  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
+  if(window.ReactNativeWebView){
+    // React Native WebView内：expo-printで出力
+    const html = document.getElementById('print-table').outerHTML
+      + (examEntries.length>0 ? document.getElementById('exam-print-table').outerHTML : '')
+      + document.getElementById('card-memo').outerHTML;
+    window.ReactNativeWebView.postMessage(JSON.stringify({type:'print', html:html}));
+    document.getElementById('print-table').style.display='none';
+    if(examEntries.length>0) document.getElementById('exam-print-table').style.display='none';
+  } else {
+    requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
+  }
 }
 
 // ─── Audio ───
@@ -1002,15 +1079,29 @@ function setExamTimer(min){
   if(isExamTimerRunning) return;
   EXAM_DURATION=min*60; examSecondsLeft=EXAM_DURATION;
   const el=document.getElementById('examRange');
-  if(el){ el.value=Math.min(min-1, 8); document.getElementById('examRangeVal').textContent=min+'分'; }
+  const v=Math.min(Math.max(min,0),10);
+  if(el){ el.value=v; updateRangeBg(el, v, 10); document.getElementById('examRangeVal').textContent=min+'分'; }
   updateExamTimerUI(); toast(min+'分にセットしました');
+}
+
+function setExamSliderVal(v){
+  v=Math.max(0,Math.min(v,10));
+  const mins=Math.max(1,v);
+  EXAM_DURATION=mins*60; examSecondsLeft=EXAM_DURATION;
+  document.getElementById('examRangeVal').textContent=mins+'分';
+  const ex=document.getElementById('examRange');
+  if(ex){ ex.value=v; updateRangeBg(ex, v, 10); }
+  updateExamTimerUI();
 }
 
 function onExamRangeChange(val){
   if(isExamTimerRunning) return;
-  const mins=Math.min(parseInt(val)+1, 10); // 最大10分
+  const v=parseInt(val);
+  const mins=Math.max(1,v);
   EXAM_DURATION=mins*60; examSecondsLeft=EXAM_DURATION;
   document.getElementById('examRangeVal').textContent=mins+'分';
+  const ex=document.getElementById('examRange');
+  if(ex) updateRangeBg(ex, v, 10);
   updateExamTimerUI();
 }
 
@@ -1276,10 +1367,19 @@ function downloadExamAudio(){
   toast('録音中のデータをダウンロードしました');
 }
 function _doDownloadExamAudio(blob){
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='口頭試問_'+(document.getElementById('sessionDate').value||'recording').replace(/-/g,'')+'.webm';
-  a.click();
+  const filename='口頭試問_'+(document.getElementById('sessionDate').value||'recording').replace(/-/g,'')+'.webm';
+  if(window.ReactNativeWebView){
+    const reader=new FileReader();
+    reader.onloadend=()=>{
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type:'saveAudio', data:reader.result, filename:filename
+      }));
+    };
+    reader.readAsDataURL(blob);
+  } else {
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+  }
 }
 
 function setExamStatus(type,text){
