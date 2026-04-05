@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>面談記録メーカー</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -17,10 +17,15 @@
   --r:10px;--sh:0 2px 8px rgba(0,0,0,.07);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:14px;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:14px;-webkit-font-smoothing:antialiased;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
 .page{display:none;min-height:100vh;padding-bottom:40px}
 .page.active{display:block}
-.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--sh)}
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--sh);padding-top:calc(13px + env(safe-area-inset-top))}
 .hdr-title{font-family:'Noto Serif JP',serif;font-size:17px;font-weight:600}
 .hdr-sub{font-size:9px;letter-spacing:.3em;color:var(--ac);text-transform:uppercase;margin-bottom:1px}
 .hdr-back{background:none;border:none;color:var(--ac);font-size:14px;cursor:pointer;padding:4px 8px;font-family:'Noto Sans JP',sans-serif}
@@ -276,6 +281,9 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 
     <div class="audio-player" id="audioPlayer">
       <div class="audio-label">🎧 面談録音</div>
+      <div style="font-size:11px;color:var(--red);background:var(--red-bg);border:1px solid var(--red-bd);border-radius:6px;padding:6px 10px;margin-bottom:8px;line-height:1.6">
+        ⚠️ 録音データはこのページを閉じると消えます。保存する場合は「↓ ダウンロード」を押してください。
+      </div>
       <audio id="audioEl" style="display:none"></audio>
       <div class="custom-audio-wrap">
         <div class="custom-audio-bar-bg" onclick="seekAudio(event,'audioEl')">
@@ -416,6 +424,9 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 
     <div class="audio-player" id="examAudioPlayer">
       <div class="audio-label">🎧 口頭試問録音</div>
+      <div style="font-size:11px;color:var(--red);background:var(--red-bg);border:1px solid var(--red-bd);border-radius:6px;padding:6px 10px;margin-bottom:8px;line-height:1.6">
+        ⚠️ 録音データはこのページを閉じると消えます。保存する場合は「↓ ダウンロード」を押してください。
+      </div>
       <audio id="examAudioEl" style="display:none"></audio>
       <div class="custom-audio-wrap">
         <div class="custom-audio-bar-bg" onclick="seekAudio(event,'examAudioEl')">
