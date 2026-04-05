@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -868,6 +869,9 @@ function finalizeRec() {
   const doFinalize = () => {
     if(audioStream){audioStream.getTracks().forEach(t=>t.stop()); audioStream=null;}
     isRecording=false; isPaused=false;
+    if(window.ReactNativeWebView){
+      window.ReactNativeWebView.postMessage(JSON.stringify({type:'stopSR'}));
+    }
     if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
     document.getElementById('liveText').classList.remove('show');
     if(allAudioChunks.length > 0) {
@@ -944,7 +948,21 @@ function switchSpeaker() {
 
 // ─── Speech ───
 function startSpeechRecognition() {
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   const liveEl=document.getElementById('liveText'); liveEl.classList.add('show');
+  // React Native環境ではネイティブ音声認識を使用
+  if(window.ReactNativeWebView){
+    liveEl.textContent='🎤 音声認識中...';
+    liveEl.style.color='';
+    window.ReactNativeWebView.postMessage(JSON.stringify({type:'startSR', lang:'ja-JP'}));
+    return;
+  }
+  if(!SR){
+    liveEl.textContent='⚠️ この環境では音声認識が使えません。逐語録は手動で入力してください。';
+    liveEl.style.color='var(--red)';
+    return;
+  }
+  liveEl.style.color='';
   let finalBuffer='', silenceTimer=null;
   let segmentSpeaker = null;
 
@@ -1273,8 +1291,21 @@ function finalizeExamRec(){
 
 // ─── 口頭試問 Speech Recognition ───
 function startExamSpeechRecognition(){
+  const SR2=window.SpeechRecognition||window.webkitSpeechRecognition;
   const liveEl=document.getElementById('examLiveText');
   liveEl.classList.add('show');
+  if(window.ReactNativeWebView){
+    liveEl.textContent='🎤 音声認識中...';
+    liveEl.style.color='';
+    window.ReactNativeWebView.postMessage(JSON.stringify({type:'startExamSR', lang:'ja-JP'}));
+    return;
+  }
+  if(!SR2){
+    liveEl.textContent='⚠️ この環境では音声認識が使えません。記録は手動で入力してください。';
+    liveEl.style.color='var(--red)';
+    return;
+  }
+  liveEl.style.color='';
   let finalBuffer='', silenceTimer=null;
   let segmentSpeaker = null;
 
@@ -1315,7 +1346,7 @@ function startExamSpeechRecognition(){
   } else {
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
     if(!SR) return;
-    examSpeechRecognition=new SR();
+    examSpeechRecognition=new SR2();
     examSpeechRecognition.lang='ja-JP'; examSpeechRecognition.continuous=true; examSpeechRecognition.interimResults=true; examSpeechRecognition.maxAlternatives=1;
     examSpeechRecognition.onresult=e=>{
       let interim='';
@@ -1502,6 +1533,78 @@ function seekAudio(event, audioId){
   const durMs = audioId==='audioEl' ? recDurationMs : examRecDurationMs;
   audioEl.currentTime=(durMs/1000)*ratio;
 }
+
+// ─── RNネイティブ音声認識からの受信 ───
+window.onNativeSRResult = function(text, isFinal) {
+  const liveEl = document.getElementById('liveText');
+  if(!isRecording || isPaused) return;
+  liveEl.classList.add('show');
+  if(!isFinal){
+    liveEl.textContent = '🎤 ' + text;
+    liveEl.style.color = '';
+    return;
+  }
+  // 確定テキスト
+  if(text.trim()){
+    if(!window._srBuffer) window._srBuffer = '';
+    if(!window._srSpeaker) window._srSpeaker = currentSpeaker;
+    window._srBuffer += text;
+    liveEl.textContent = '✓ ' + window._srBuffer;
+    clearTimeout(window._srTimer);
+    const spk = window._srSpeaker;
+    window._srTimer = setTimeout(()=>{
+      if(window._srBuffer && window._srBuffer.trim()){
+        const el = TIMER_DURATION - timerSecondsLeft;
+        const mm = Math.floor(el/60).toString().padStart(2,'0');
+        const ss = (el%60).toString().padStart(2,'0');
+        entries.push({id:nextId++,label:spk,text:window._srBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
+        renderEntries(); enableBtns();
+        window._srBuffer = ''; window._srSpeaker = null; liveEl.textContent='';
+      }
+    }, 800);
+  }
+};
+
+window.onNativeExamSRResult = function(text, isFinal) {
+  const liveEl = document.getElementById('examLiveText');
+  if(!isExamRecording || isExamPaused) return;
+  liveEl.classList.add('show');
+  if(!isFinal){
+    liveEl.textContent = '🎤 ' + text;
+    liveEl.style.color = '';
+    return;
+  }
+  if(text.trim()){
+    if(!window._examSrBuffer) window._examSrBuffer = '';
+    if(!window._examSrSpeaker) window._examSrSpeaker = examCurrentSpeaker;
+    window._examSrBuffer += text;
+    liveEl.textContent = '✓ ' + window._examSrBuffer;
+    clearTimeout(window._examSrTimer);
+    const spk = window._examSrSpeaker;
+    window._examSrTimer = setTimeout(()=>{
+      if(window._examSrBuffer && window._examSrBuffer.trim()){
+        const el2 = EXAM_DURATION - examSecondsLeft;
+        const mm = Math.floor(el2/60).toString().padStart(2,'0');
+        const ss = (el2%60).toString().padStart(2,'0');
+        examEntries.push({id:examNextId++,label:spk,text:window._examSrBuffer.trim(),notes:'',time:mm+':'+ss});
+        renderExamEntries();
+        window._examSrBuffer = ''; window._examSrSpeaker = null; liveEl.textContent='';
+      }
+    }, 800);
+  }
+};
+
+// switchSpeaker時にSRバッファをリセット
+const _origSwitch = window.switchSpeaker;
+window.switchSpeaker = function(){
+  window._srBuffer = ''; window._srSpeaker = null;
+  if(_origSwitch) _origSwitch();
+};
+const _origExamSwitch = window.switchExamSpeaker;
+window.switchExamSpeaker = function(){
+  window._examSrBuffer = ''; window._examSrSpeaker = null;
+  if(_origExamSwitch) _origExamSwitch();
+};
 
 // ─── Toast ───
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
