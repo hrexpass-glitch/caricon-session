@@ -938,10 +938,11 @@ function updateSpeakerBar() {
   }
 }
 function switchSpeaker() {
-  if(mainFlushBuffer) mainFlushBuffer(); // バッファを即フラッシュ
+  // 切替時：liveTextをクリアしてSRを再起動（切替前の音声バッファを破棄）
+  document.getElementById('liveText').textContent = '';
   currentSpeaker=currentSpeaker==='CC'?'CL':'CC';
   updateSpeakerBar(); toast(currentSpeaker+' に切り替えました');
-  // 認識エンジンをリセット（古いspeakerの未確定結果を破棄）
+  // SRを即停止→onendで自動再起動（クリーンな状態でスタート）
   if(speechRecognition){ try{speechRecognition.stop();}catch(e){} }
 }
 
@@ -993,7 +994,7 @@ function startSpeechRecognition() {
           entries.push({id:nextId++,label:spk,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
           renderEntries(); enableBtns(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
         }
-      },800);
+      },1200);
     }
   };
 
@@ -1338,7 +1339,7 @@ function startExamSpeechRecognition(){
           examEntries.push({id:examNextId++,label:spk,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
           renderExamEntries(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
         }
-      },800);
+      },1200);
     }
   };
 
@@ -1349,7 +1350,7 @@ function startExamSpeechRecognition(){
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
     if(!SR) return;
     examSpeechRecognition=new SR2();
-    examSpeechRecognition.lang='ja-JP'; examSpeechRecognition.continuous=true; examSpeechRecognition.interimResults=true; examSpeechRecognition.maxAlternatives=1;
+    examSpeechRecognition.lang='ja-JP'; examSpeechRecognition.continuous=true; examSpeechRecognition.interimResults=true;
     examSpeechRecognition.onresult=e=>{
       let interim='';
       for(let i=e.resultIndex;i<e.results.length;i++){
@@ -1406,7 +1407,9 @@ function toggleExamAudio(){
 
 // ─── 口頭試問 発言者切替 ───
 function switchExamSpeaker(){
-  if(examFlushBuffer) examFlushBuffer(); // バッファを即フラッシュ
+  window._examSrBuffer = ''; window._examSrSpeaker = null;
+  clearTimeout(window._examSrTimer);
+  if(examFlushBuffer) examFlushBuffer();
   examCurrentSpeaker = examCurrentSpeaker === 'Q' ? 'A' : 'Q';
   updateExamSpeakerBar();
   toast(examCurrentSpeaker === 'Q' ? '🎤 Q 試験官' : '🎤 A 自分');
