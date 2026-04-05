@@ -948,21 +948,15 @@ function switchSpeaker() {
 
 // ─── Speech ───
 function startSpeechRecognition() {
-  // 既存のSRを確実に停止してから新しく起動
-  if(speechRecognition){try{speechRecognition.abort();}catch(e){} speechRecognition=null;}
-  if(examSpeechRecognition){try{examSpeechRecognition.abort();}catch(e){} examSpeechRecognition=null;}
-
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   const liveEl=document.getElementById('liveText');
   liveEl.classList.add('show'); liveEl.style.color='';
 
-  // RN環境ではネイティブSRを使用
   if(window.ReactNativeWebView){
     liveEl.textContent='🎤 音声認識中...';
     window.ReactNativeWebView.postMessage(JSON.stringify({type:'startSR', lang:'ja-JP'}));
     return;
   }
-
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){
     liveEl.textContent='⚠️ この環境では音声認識が使えません。逐語録は手動で入力してください。';
     liveEl.style.color='var(--red)'; return;
@@ -1008,15 +1002,11 @@ function startSpeechRecognition() {
           entries.push({id:nextId++,label:spk,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
           renderEntries(); enableBtns(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
         }
-      },1200);
+      },1800);
     }
   };
-  speechRecognition.onerror=(e)=>{ if(e.error==='aborted') return; };
-  speechRecognition.onend=()=>{
-    if(isRecording&&!isPaused){
-      try{speechRecognition.start();}catch(e){}
-    }
-  };
+  speechRecognition.onerror=()=>{};
+  speechRecognition.onend=()=>{ if(isRecording&&!isPaused) try{speechRecognition.start();}catch(e){} };
   try{speechRecognition.start();}catch(e){}
 }
 
