@@ -938,12 +938,8 @@ function updateSpeakerBar() {
   }
 }
 function switchSpeaker() {
-  // 切替時：liveTextをクリアしてSRを再起動（切替前の音声バッファを破棄）
-  document.getElementById('liveText').textContent = '';
   currentSpeaker=currentSpeaker==='CC'?'CL':'CC';
   updateSpeakerBar(); toast(currentSpeaker+' に切り替えました');
-  // SRを即停止→onendで自動再起動（クリーンな状態でスタート）
-  if(speechRecognition){ try{speechRecognition.stop();}catch(e){} }
 }
 
 // ─── Speech ───
@@ -1398,14 +1394,9 @@ function toggleExamAudio(){
 
 // ─── 口頭試問 発言者切替 ───
 function switchExamSpeaker(){
-  window._examSrBuffer = ''; window._examSrSpeaker = null;
-  clearTimeout(window._examSrTimer);
-  if(examFlushBuffer) examFlushBuffer();
   examCurrentSpeaker = examCurrentSpeaker === 'Q' ? 'A' : 'Q';
   updateExamSpeakerBar();
   toast(examCurrentSpeaker === 'Q' ? '🎤 Q 試験官' : '🎤 A 自分');
-  // 認識エンジンをリセット（古いspeakerの未確定結果を破棄）
-  if(examSpeechRecognition){ try{examSpeechRecognition.stop();}catch(e){} }
 }
 function updateExamSpeakerBar(){
   const bar = document.getElementById('examSpeakerBar');
