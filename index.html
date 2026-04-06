@@ -1507,17 +1507,7 @@ window.onNativeExamSRResult = function(text, isFinal) {
   }
 };
 
-// switchSpeaker時にSRバッファをリセット
-const _origSwitch = window.switchSpeaker;
-window.switchSpeaker = function(){
-  window._srBuffer = ''; window._srSpeaker = null;
-  if(_origSwitch) _origSwitch();
-};
-const _origExamSwitch = window.switchExamSpeaker;
-window.switchExamSpeaker = function(){
-  window._examSrBuffer = ''; window._examSrSpeaker = null;
-  if(_origExamSwitch) _origExamSwitch();
-};
+
 
 // ─── Toast ───
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
