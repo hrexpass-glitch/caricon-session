@@ -945,58 +945,27 @@ function switchSpeaker() {
 // ─── Speech ───
 function startSpeechRecognition() {
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  const liveEl=document.getElementById('liveText');
-  liveEl.classList.add('show'); liveEl.style.color='';
-
-  if(window.ReactNativeWebView){
-    liveEl.textContent='🎤 音声認識中...';
-    window.ReactNativeWebView.postMessage(JSON.stringify({type:'startSR', lang:'ja-JP'}));
-    return;
-  }
-  if(!SR){
-    liveEl.textContent='⚠️ この環境では音声認識が使えません。逐語録は手動で入力してください。';
-    liveEl.style.color='var(--red)'; return;
-  }
-
-  let finalBuffer='', silenceTimer=null, segmentSpeaker=null;
-
-  mainFlushBuffer = () => {
-    clearTimeout(silenceTimer);
-    if(finalBuffer.trim()){
-      const spk=segmentSpeaker||currentSpeaker;
-      const el=TIMER_DURATION-timerSecondsLeft;
-      const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
-      entries.push({id:nextId++,label:spk,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
-      renderEntries(); enableBtns(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
-    }
-  };
-
+  if(!SR) return;
   speechRecognition=new SR();
-  speechRecognition.lang='ja-JP';
-  speechRecognition.continuous=true;
-  speechRecognition.interimResults=true;
-
+  speechRecognition.lang='ja-JP'; speechRecognition.continuous=true; speechRecognition.interimResults=true;
+  const liveEl=document.getElementById('liveText'); liveEl.classList.add('show');
+  let finalBuffer='', silenceTimer=null;
   speechRecognition.onresult=event=>{
-    if(!isRecording||isPaused) return;
-    let interim='', final='';
+    let interim='',final='';
     for(let i=event.resultIndex;i<event.results.length;i++){
       const t=event.results[i][0].transcript;
       if(event.results[i].isFinal) final+=t; else interim+=t;
     }
-    if(interim){
-      if(segmentSpeaker===null) segmentSpeaker=currentSpeaker;
-      liveEl.textContent='🎤 '+interim;
-    }
+    if(interim) liveEl.textContent='🎤 '+interim;
     if(final.trim()){
       finalBuffer+=final; liveEl.textContent='✓ '+finalBuffer;
       clearTimeout(silenceTimer);
-      const spk=segmentSpeaker||currentSpeaker;
       silenceTimer=setTimeout(()=>{
         if(finalBuffer.trim()){
           const el=TIMER_DURATION-timerSecondsLeft;
           const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
-          entries.push({id:nextId++,label:spk,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
-          renderEntries(); enableBtns(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
+          entries.push({id:nextId++,label:currentSpeaker,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
+          renderEntries(); enableBtns(); finalBuffer=''; liveEl.textContent='';
         }
       },1800);
     }
