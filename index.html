@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>面談記録メーカー</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>面談記録 for キャリコン</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -17,10 +17,15 @@
   --r:10px;--sh:0 2px 8px rgba(0,0,0,.07);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:14px;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:14px;-webkit-font-smoothing:antialiased;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
 .page{display:none;min-height:100vh;padding-bottom:40px}
 .page.active{display:block}
-.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--sh)}
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--sh);padding-top:calc(13px + env(safe-area-inset-top))}
 .hdr-title{font-family:'Noto Serif JP',serif;font-size:17px;font-weight:600}
 .hdr-sub{font-size:9px;letter-spacing:.3em;color:var(--ac);text-transform:uppercase;margin-bottom:1px}
 .hdr-back{background:none;border:none;color:var(--ac);font-size:14px;cursor:pointer;padding:4px 8px;font-family:'Noto Sans JP',sans-serif}
@@ -129,39 +134,50 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 .audio-player audio{width:100%;margin-top:4px}
 .audio-label{font-size:11px;color:var(--muted);margin-bottom:4px}
 
-/* ─── スライダー：min=1 max=29 で15が完全中央 ─── */
-input[type=range]#timerRange {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 4px;
-  border-radius: 2px;
-  outline: none;
+/* ─── カスタムスライダー ─── */
+.cslider { position:relative; height:28px; cursor:pointer; }
+.cslider-track {
+  position:absolute; left:0; right:0; top:50%;
+  transform:translateY(-50%);
+  height:4px; background:var(--border2); border-radius:2px;
+  overflow:visible;
 }
-input[type=range]#timerRange::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--ac);
-  cursor: pointer;
-  border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+.cslider-fill {
+  position:absolute; left:0; top:0; bottom:0;
+  background:var(--ac); border-radius:2px;
+  width:50%; /* JS上書き */
 }
-input[type=range]#timerRange::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--ac);
-  cursor: pointer;
-  border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+.cslider-thumb {
+  position:absolute; top:50%;
+  left:50%; /* JS上書き */
+  transform:translate(-50%,-50%) !important;
+  width:20px; height:20px; border-radius:50%;
+  background:var(--ac); border:2.5px solid #fff;
+  box-shadow:0 1px 5px rgba(0,0,0,.25);
+  pointer-events:none;
+}
+.cslider input[type=range] {
+  position:absolute; inset:0; width:100%; height:100%;
+  opacity:0; cursor:pointer; margin:0;
+  -webkit-appearance:none; appearance:none;
 }
 
+
+/* ─── カスタムオーディオプレーヤー ─── */
+.custom-audio-wrap { margin-bottom:6px; }
+.custom-audio-bar-bg {
+  height:6px; background:var(--border2); border-radius:3px;
+  cursor:pointer; position:relative; margin-bottom:4px;
+}
+.custom-audio-bar-fill {
+  height:100%; background:var(--ac); border-radius:3px;
+  width:0%; pointer-events:none; transition:width .1s linear;
+}
+.custom-audio-time { font-size:11px; color:var(--muted); text-align:right; }
+
 @media print {
-  .hdr-back,.hdr-btn,.fab,#card-timer,#card-actions,
-  .corr-bar,.add-row-btn,.speaker-bar,.live-text,.status,
+  .hdr-back,.hdr-btn,.fab,#card-timer,#card-actions,#card-exam,#card-exam-transcript,#card-exam-actions,#card-pdf,
+  .corr-bar,.examCorrBar,.add-row-btn,.speaker-bar,.live-text,.status,
   .del-btn,.count-badge,#card-transcript,.audio-player{display:none!important;}
   body{font-size:11px!important;background:#fff!important;}
   .page{display:block!important;padding:0!important;}
@@ -176,6 +192,7 @@ input[type=range]#timerRange::-moz-range-thumb {
   .memo-body{display:block!important;}
   .memo-ta{border:1px solid #ccc!important;background:#fffdf5!important;font-size:10px!important;min-height:auto!important;}
   #print-table{display:block!important;}
+  #exam-print-table{display:block!important;}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
 }
 </style>
@@ -223,12 +240,18 @@ input[type=range]#timerRange::-moz-range-thumb {
     </div>
 
     <div class="field" style="margin-bottom:10px">
-      <label>カスタム時間（分）</label>
-      <div style="display:flex;align-items:center;gap:10px">
-        <!-- ★修正: min="1" max="29" → value=15 がぴったり中央 -->
-        <input type="range" id="timerRange" min="1" max="29" value="15" oninput="onRangeChange(this.value)" style="flex:1">
-        <span id="timerRangeVal" style="font-size:16px;font-weight:700;color:var(--ac);min-width:40px;text-align:right">15分</span>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <label style="margin-bottom:0">カスタム時間（分）</label>
+        <span id="timerRangeVal" style="font-size:16px;font-weight:700;color:var(--ac)">15分</span>
       </div>
+      <div class="cslider">
+  <div class="cslider-track">
+    <div class="cslider-fill" id="timerFill"></div>
+    <div class="cslider-thumb" id="timerThumb"></div>
+  </div>
+  <input type="range" id="timerRange" min="0" max="30" value="15"
+    oninput="onRangeChange(this.value)">
+</div>
     </div>
 
     <div class="timer-num" id="timerDisplay">15:00</div>
@@ -243,7 +266,11 @@ input[type=range]#timerRange::-moz-range-thumb {
       <button class="switch-btn to-cl" id="switchBtn" onclick="switchSpeaker()">CLに切替</button>
     </div>
 
-    <button class="btn btn-full" id="resetBtn" onclick="resetTimerFull()" style="margin-bottom:0">↺ リセット</button>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0">
+      <button class="btn btn-full btn-danger" id="endBtn" onclick="endSession()" disabled style="font-size:13px;padding:11px">⏹ 終了・録音確定</button>
+      <button class="btn btn-full" id="resetBtn" onclick="resetTimerFull()" style="font-size:13px;padding:11px">↺ リセット</button>
+    </div>
 
     <div class="status" id="statusBar">
       <span class="status-dot"></span>
@@ -253,20 +280,29 @@ input[type=range]#timerRange::-moz-range-thumb {
     <div class="live-text" id="liveText"></div>
 
     <div class="audio-player" id="audioPlayer">
-      <div class="audio-label">🎧 録音データ</div>
-      <audio id="audioEl" controls style="width:100%;margin-bottom:8px"></audio>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="audio-label">🎧 面談録音</div>
+      <div style="font-size:11px;color:var(--red);background:var(--red-bg);border:1px solid var(--red-bd);border-radius:6px;padding:6px 10px;margin-bottom:8px;line-height:1.6">
+        ⚠️ 録音データはこのページを閉じると消えます。保存する場合は「↓ ダウンロード」を押してください。
+      </div>
+      <audio id="audioEl" style="display:none"></audio>
+      <div class="custom-audio-wrap">
+        <div class="custom-audio-bar-bg" onclick="seekAudio(event,'audioEl')">
+          <div class="custom-audio-bar-fill" id="audioBar"></div>
+        </div>
+        <div class="custom-audio-time" id="audioTimeDisp">0:00 / 0:00</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
         <button class="btn" id="audioPlayBtn" onclick="toggleAudio()" style="font-size:12px;padding:8px">▶ 再生</button>
         <button class="btn" onclick="downloadAudio()" style="font-size:12px;padding:8px">↓ ダウンロード</button>
       </div>
     </div>
+
   </div>
 
   <div class="card" id="card-actions">
     <div class="sec-lbl">操作</div>
     <button class="action-btn" id="correctBtn" onclick="showCorrection()" disabled>⇄ ラベルずれを一括訂正</button>
     <button class="action-btn" onclick="addRow()">＋ 行を手動追加</button>
-    <button class="action-btn" id="pdfBtn" onclick="downloadPdf()" disabled>↓ PDF出力</button>
   </div>
 
   <div class="corr-bar" id="corrBar">
@@ -287,7 +323,6 @@ input[type=range]#timerRange::-moz-range-thumb {
     </div>
     <div id="tableWrap" style="display:none">
       <div id="entryList"></div>
-      <button class="add-row-btn" onclick="addRow()">＋ 行を追加</button>
     </div>
   </div>
 
@@ -307,6 +342,22 @@ input[type=range]#timerRange::-moz-range-thumb {
   </table>
 </div>
 
+<div id="exam-print-table" style="display:none;padding:0 12px;margin-top:16px">
+  <div style="font-family:'Noto Serif JP',serif;font-size:13px;font-weight:600;margin:8px 0 4px;border-bottom:2px solid #333;padding-bottom:4px">口頭試問記録</div>
+  <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:6px">
+    <thead>
+      <tr style="background:#f2f2f0">
+        <th style="border:1px solid #ccc;padding:5px;width:28px;text-align:center">番号</th>
+        <th style="border:1px solid #ccc;padding:5px;width:44px;text-align:center">発言者</th>
+        <th style="border:1px solid #ccc;padding:5px;width:36px;text-align:center">時刻</th>
+        <th style="border:1px solid #ccc;padding:5px">内容</th>
+        <th style="border:1px solid #ccc;padding:5px;width:28%">メモ・気づき</th>
+      </tr>
+    </thead>
+    <tbody id="exam-pt-body"></tbody>
+  </table>
+</div>
+
   <div class="card" id="card-memo">
     <div class="memo-hdr" onclick="toggleMemo()">
       <span class="memo-hdr-txt">📝 総合メモ・フィードバック</span>
@@ -315,6 +366,116 @@ input[type=range]#timerRange::-moz-range-thumb {
     <div class="memo-body" id="memoBody">
       <textarea class="memo-ta" id="memoText" placeholder="全体を通じての気づき、改善点、良かった点などを記録…"></textarea>
     </div>
+  </div>
+
+  <div class="card" id="card-pdf" style="border-color:var(--ac-bd);background:var(--ac-lt)">
+    <button class="btn btn-primary btn-full" id="pdfBtn" onclick="downloadPdf()" style="font-size:14px;padding:13px">
+      ↓ PDF出力（面談＋口頭試問）
+    </button>
+  </div>
+
+  <!-- 口頭試問カード -->
+  <div class="card" id="card-exam">
+    <div class="sec-lbl">口頭試問</div>
+
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn" style="flex:1;font-weight:700;font-size:14px;line-height:1.4" onclick="setExamTimer(5)">⏱ 5分<br><span style="font-size:9px;font-weight:400;opacity:.7">国キャリ</span></button>
+      <button class="btn" style="flex:1;font-weight:700;font-size:14px;line-height:1.4" onclick="setExamTimer(10)">⏱ 10分<br><span style="font-size:9px;font-weight:400;opacity:.7">2級</span></button>
+    </div>
+
+    <div class="field" style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <label style="margin-bottom:0">カスタム時間（分）</label>
+        <span id="examRangeVal" style="font-size:16px;font-weight:700;color:var(--ac)">5分</span>
+      </div>
+      <div class="cslider">
+  <div class="cslider-track">
+    <div class="cslider-fill" id="examFill"></div>
+    <div class="cslider-thumb" id="examThumb"></div>
+  </div>
+  <input type="range" id="examRange" min="0" max="10" value="5"
+    oninput="onExamRangeChange(this.value)">
+</div>
+    </div>
+
+    <div class="timer-num" id="examTimerDisplay">05:00</div>
+    <div class="timer-bar-bg"><div class="timer-bar" id="examTimerBar" style="width:100%"></div></div>
+    <div class="timer-lbl" id="examTimerLbl">5分カウントダウン</div>
+
+    <button class="btn btn-full btn-primary" id="examStartBtn" onclick="toggleExamStart()" style="margin-bottom:8px;font-size:15px;padding:14px">▶ スタート</button>
+
+    <div class="speaker-bar" id="examSpeakerBar" style="margin-bottom:8px">
+      <div class="speaker-label">現在の発言者</div>
+      <div class="speaker-name cc" id="examSpeakerName">Q 試験官</div>
+      <button class="switch-btn to-cl" id="examSwitchBtn" onclick="switchExamSpeaker()">A 自分に切替</button>
+    </div>
+
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0">
+      <button class="btn btn-full btn-danger" id="examEndBtn" onclick="endExamSession()" disabled style="font-size:13px;padding:11px">⏹ 終了・録音確定</button>
+      <button class="btn btn-full" onclick="resetExamTimerFull()" style="font-size:13px;padding:11px">↺ リセット</button>
+    </div>
+
+    <div class="status" id="examStatusBar" style="margin-top:8px">
+      <span class="status-dot"></span>
+      <span id="examStatusTxt">タイマーまたは録音を開始してください</span>
+    </div>
+    <div class="live-text" id="examLiveText"></div>
+
+    <div class="audio-player" id="examAudioPlayer">
+      <div class="audio-label">🎧 口頭試問録音</div>
+      <div style="font-size:11px;color:var(--red);background:var(--red-bg);border:1px solid var(--red-bd);border-radius:6px;padding:6px 10px;margin-bottom:8px;line-height:1.6">
+        ⚠️ 録音データはこのページを閉じると消えます。保存する場合は「↓ ダウンロード」を押してください。
+      </div>
+      <audio id="examAudioEl" style="display:none"></audio>
+      <div class="custom-audio-wrap">
+        <div class="custom-audio-bar-bg" onclick="seekAudio(event,'examAudioEl')">
+          <div class="custom-audio-bar-fill" id="examAudioBar"></div>
+        </div>
+        <div class="custom-audio-time" id="examAudioTimeDisp">0:00 / 0:00</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+        <button class="btn" id="examAudioPlayBtn" onclick="toggleExamAudio()" style="font-size:12px;padding:8px">▶ 再生</button>
+        <button class="btn" onclick="downloadExamAudio()" style="font-size:12px;padding:8px">↓ ダウンロード</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 口頭試問 逐語録 -->
+  <div class="card" id="card-exam-transcript">
+    <div class="transcript-hdr">
+      <span class="transcript-title">口頭試問 記録</span>
+      <span class="count-badge" id="examEntryCounter">—</span>
+    </div>
+    <div id="examEmptyState" class="empty-state">
+      <div class="empty-icon">💬</div>
+      <div class="empty-text">録音すると文字起こしが自動で入力されます<br>手動で行を追加することもできます</div>
+    </div>
+    <div id="examTableWrap" style="display:none">
+      <div id="examEntryList"></div>
+    </div>
+  </div>
+
+  <div class="card" id="card-exam-actions">
+    <div class="sec-lbl">口頭試問 操作</div>
+    <button class="action-btn" id="examCorrectBtn" onclick="showExamCorrection()" disabled>⇄ Q/Aラベルずれを一括訂正</button>
+    <button class="action-btn" onclick="addExamRow()">＋ 行を手動追加</button>
+  </div>
+
+  <div class="corr-bar" id="examCorrBar">
+    <div class="corr-txt"><strong>一括訂正：</strong>何番目以降が入れ替わっていますか？</div>
+    <select class="corr-sel" id="examCorrFrom"><option value="">番号を選択</option></select>
+    <button class="corr-apply" onclick="applyExamCorrection()">訂正</button>
+    <button class="corr-close" onclick="hideExamCorrection()">✕</button>
+  </div>
+
+</div>
+
+<div class="modal-ov" id="examTimerModal">
+  <div class="modal-box">
+    <div class="modal-big">⏰</div>
+    <div class="modal-msg">口頭試問の時間が経過しました</div>
+    <button class="btn btn-primary btn-full" onclick="document.getElementById('examTimerModal').classList.remove('show')">閉じる</button>
   </div>
 </div>
 
@@ -358,21 +519,71 @@ let isTimerRunning = false, timerInterval = null;
 let isRecording = false, isPaused = false;
 let mediaRecorder = null, audioStream = null;
 let allAudioChunks = [], audioBlob = null;
+let recStartedAt = null, recDurationMs = 0; // 録音時間を自前計測
+let audioCtx = null, gainNode = null; // 一時停止中ミュート用
+let savedChunks = []; // 一時停止をまたいで蓄積
+// 口頭試問
+let EXAM_DURATION = 5 * 60;
+let examSecondsLeft = EXAM_DURATION;
+let isExamTimerRunning = false, examTimerInterval = null;
+let isExamRecording = false, isExamPaused = false;
+let examMediaRecorder = null, examAudioStream = null;
+let examAllChunks = [], examSavedChunks = [], examAudioBlob = null;
+let examRecStartedAt = null, examRecDurationMs = 0;
+let examAudioCtx = null, examGainNode = null;
+let examFlushBuffer = null; // 切替時にバッファを強制フラッシュ
+let mainFlushBuffer = null; // 面談側も同様
+let examSpeechRecognition = null;
+let examEntries = [], examNextId = 1;
+let examCurrentSpeaker = 'Q';
 let speechRecognition = null;
 let currentSpeaker = 'CC';
 
 document.getElementById('sessionDate').value = new Date().toISOString().split('T')[0];
 
-// ★修正: min=1, max=29 → (val-1)/(29-1)*100 で正確な塗り分け
-updateSliderBg(15);
-renderSessionList();
+// ─── タイマースライダー（ネイティブrange min=1 max=29 val=15=真ん中）───
+// ・初期背景はCSSで50%固定済み
+// ・JS操作時のfillは (val-1)/28*100% のシンプル式（中央では完全一致）
+// min=0,max=28,value=14 → 14/28=50%が完全中央 → 表示はval+1=15分
+let sliderVal = 15; // min=1,max=30 → 15が中央(50%)
 
-// ─── スライダー背景更新（min=1, max=29 基準）───
-function updateSliderBg(val) {
-  const pct = ((val - 1) / (29 - 1)) * 100;  // ★修正箇所
-  const el = document.getElementById('timerRange');
-  if (el) el.style.background = `linear-gradient(to right, var(--ac) ${pct}%, var(--border2) ${pct}%)`;
+function updateRangeBg(el, val, maxVal) {
+  // val=0〜maxVal, 50%=中央, 100%=右端
+  const pct = (val / maxVal * 100).toFixed(1);
+  const isExam = el.id === 'examRange';
+  const fill  = document.getElementById(isExam ? 'examFill'  : 'timerFill');
+  const thumb = document.getElementById(isExam ? 'examThumb' : 'timerThumb');
+  if (fill)  fill.style.width = pct + '%';
+  if (thumb) thumb.style.left = pct + '%';
 }
+
+function setSliderVal(rawVal, triggerChange) {
+  rawVal = Math.max(0, Math.min(30, rawVal));
+  sliderVal = rawVal;
+  const mins = Math.max(1, rawVal);
+  const el = document.getElementById('timerRange');
+  if (el) { el.value = rawVal; updateRangeBg(el, rawVal, 30); }
+  document.getElementById('timerRangeVal').textContent = mins + '分';
+  if (triggerChange) {
+    TIMER_DURATION = mins * 60; timerSecondsLeft = TIMER_DURATION;
+    updateTimerUI();
+  }
+}
+
+function onRangeChange(val) {
+  if (isTimerRunning) return;
+  setSliderVal(parseInt(val), true);
+}
+
+// showPage後にgradientを再計算
+function refreshSliderBg() {
+  const el = document.getElementById('timerRange');
+  if (el) updateRangeBg(el, sliderVal, 30);
+  const ex = document.getElementById('examRange');
+  if (ex) updateRangeBg(ex, parseInt(ex.value)||4, 9);
+}
+
+renderSessionList();
 
 // ─── Session List ───
 function renderSessionList() {
@@ -416,6 +627,21 @@ function newSession() {
   });
   document.getElementById('session-hdr-title').textContent = today+'の面談';
   document.getElementById('audioPlayer').classList.remove('show');
+  document.getElementById('examAudioPlayer').classList.remove('show');
+  examEntries=[]; examNextId=1; examAudioBlob=null; examAllChunks=[];
+  examCurrentSpeaker='Q'; finalizeExamRec(); resetExamTimerFull();
+  renderExamEntries();
+  setSliderVal(15, false);
+  setExamSliderVal(5);
+  // 確定後グレーアウトされたボタンを全て有効化
+  ['startBtn','endBtn','resetBtn','switchBtn','examStartBtn','examEndBtn','examSwitchBtn'].forEach(function(id){
+    var el=document.getElementById(id); if(el){ el.disabled=false; }
+  });
+  var tr=document.getElementById('timerRange'); if(tr) tr.disabled=false;
+  var er=document.getElementById('examRange'); if(er) er.disabled=false;
+  document.querySelectorAll('#card-timer .btn, #card-exam .btn').forEach(function(b){ b.disabled=false; });
+  document.getElementById('endBtn').disabled=true; // スタート前はend無効
+  document.getElementById('examEndBtn').disabled=true;
   currentSpeaker = 'CC'; updateSpeakerBar(); renderEntries(); showPage('page-session');
 }
 
@@ -433,7 +659,11 @@ function openSession(id) {
   document.getElementById('memoText').value = s.memo||'';
   document.getElementById('session-hdr-title').textContent = s.title||s.date||'面談記録';
   document.getElementById('audioPlayer').classList.remove('show');
-  resetTimerFull(); renderEntries();
+  document.getElementById('examAudioPlayer').classList.remove('show');
+  examEntries=[]; examNextId=1; examAudioBlob=null; examAllChunks=[];
+  examCurrentSpeaker='Q'; finalizeExamRec(); resetExamTimerFull();
+  renderExamEntries();
+  setSliderVal(15, false); resetTimerFull(); renderEntries();
   if (entries.length) enableBtns();
   showPage('page-session');
 }
@@ -473,6 +703,15 @@ function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
+  if (id === 'page-session') {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        updateRangeBg(document.getElementById('timerRange'), sliderVal, 30);
+        const ex=document.getElementById('examRange');
+        if(ex) updateRangeBg(ex, parseInt(ex.value||'5'), 10);
+      });
+    });
+  }
 }
 
 // ─── Timer ───
@@ -481,22 +720,10 @@ function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).
 function setTimer(min) {
   if (isTimerRunning) return;
   TIMER_DURATION = min*60; timerSecondsLeft = TIMER_DURATION;
-  // ★修正: 29を超える場合はスライダーを29（右端）に寄せる。15分はvalue=15でぴったり中央
-  const clamped = Math.min(Math.max(min, 1), 29);
-  document.getElementById('timerRange').value = clamped;
-  document.getElementById('timerRangeVal').textContent = min+'分';
-  updateSliderBg(clamped);
+  setSliderVal(Math.min(Math.max(min, 0), 30), false);
   updateTimerUI(); toast(min+'分にセットしました');
 }
 
-function onRangeChange(val) {
-  if (isTimerRunning) return;
-  const mins = parseInt(val);  // min=1なのでMath.maxは不要
-  TIMER_DURATION = mins*60; timerSecondsLeft = TIMER_DURATION;
-  document.getElementById('timerRangeVal').textContent = mins+'分';
-  updateSliderBg(mins);
-  updateTimerUI();
-}
 
 function updateTimerUI() {
   const d = document.getElementById('timerDisplay');
@@ -528,6 +755,7 @@ function resetTimerFull() {
   timerSecondsLeft = TIMER_DURATION;
   const btn = document.getElementById('startBtn');
   btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
+  document.getElementById('endBtn').disabled = true;
   btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
   updateTimerUI();
 }
@@ -535,12 +763,10 @@ function resetTimerFull() {
 function onTimerEnd() {
   beep();
   document.getElementById('timerModal').classList.add('show');
-  finalizeRec();
-  setStatus('done','タイマー終了');
-  const btn = document.getElementById('startBtn');
-  btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
-  btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
-  saveSession(); toast('タイマー終了 — 自動保存しました ✓');
+  // タイマー終了時に自動で確定（endSessionと同等）
+  endSession();
+  saveSession();
+  toast('タイマー終了 — 録音・逐語録を自動確定しました ✓');
 }
 
 function dismissModal() { document.getElementById('timerModal').classList.remove('show'); }
@@ -563,12 +789,8 @@ async function startRec() {
     allAudioChunks = [];
     mediaRecorder = new MediaRecorder(audioStream);
     mediaRecorder.ondataavailable = e => { if(e.data.size>0) allAudioChunks.push(e.data); };
-    mediaRecorder.onstop = () => {
-      audioBlob = new Blob(allAudioChunks,{type:'audio/webm'});
-      document.getElementById('audioEl').src = URL.createObjectURL(audioBlob);
-      document.getElementById('audioPlayer').classList.add('show');
-    };
-    mediaRecorder.start(1000);
+    mediaRecorder.start(500);
+    recDurationMs=0; recStartedAt=Date.now();
     isRecording=true; isPaused=false;
     startSpeechRecognition();
     return true;
@@ -576,23 +798,96 @@ async function startRec() {
 }
 
 function pauseRec() {
+  if(recStartedAt){ recDurationMs += Date.now()-recStartedAt; recStartedAt=null; }
   if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.pause();
   isPaused=true;
-  if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
+  if(window._useNativeSpeech){
+    window._speechCallback=null;
+    window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({type:'stopSpeech'}));
+  } else {
+    if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
+  }
   document.getElementById('liveText').classList.remove('show');
 }
 
 function resumeRec() {
+  recStartedAt=Date.now();
   if(mediaRecorder && mediaRecorder.state==='paused') mediaRecorder.resume();
   isPaused=false; startSpeechRecognition();
 }
 
+
+// ─── 面談 終了・録音確定 ───
+function endSession() {
+  clearInterval(timerInterval); isTimerRunning = false;
+  const btn = document.getElementById('startBtn');
+  btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
+  btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
+  // タイマー・録音操作をグレーアウト（再生・ダウンロードは除く）
+  btn.disabled = true;
+  document.getElementById('endBtn').disabled = true;
+  document.getElementById('resetBtn').disabled = true;
+  document.getElementById('switchBtn').disabled = true; // 発言者切替もグレーアウト
+  document.getElementById('timerRange').disabled = true;
+  // プリセットボタンもグレーアウト
+  document.querySelectorAll('#card-timer .btn:not(#audioPlayBtn):not([onclick*="downloadAudio"]):not([onclick*="toggleAudio"])').forEach(b => { b.disabled = true; });
+  finalizeRec();
+  setStatus('done','録音・逐語録 確定済み');
+  toast('録音と逐語録を確定しました');
+}
+
+// ─── 録音中でも途中ダウンロード ───
+function downloadAudio(){
+  // 録音確定済みblob優先、なければ現在のchunksをその場でBlob化
+  if(audioBlob){
+    _doDownloadAudio(audioBlob); return;
+  }
+  const chunks = allAudioChunks;
+  if(!chunks.length){ toast('録音データがありません'); return; }
+  const blob = new Blob(chunks, {type:'audio/webm'});
+  _doDownloadAudio(blob);
+  toast('録音中のデータをダウンロードしました（終了後に完全版が取得できます）');
+}
+function _doDownloadAudio(blob){
+  const filename='録音_'+(document.getElementById('sessionDate').value||'recording').replace(/-/g,'')+'.webm';
+  if(window.ReactNativeWebView){
+    const reader=new FileReader();
+    reader.onloadend=()=>{
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type:'saveAudio', data:reader.result, filename:filename
+      }));
+    };
+    reader.readAsDataURL(blob);
+  } else {
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+  }
+}
+
 function finalizeRec() {
-  if(mediaRecorder && mediaRecorder.state!=='inactive') mediaRecorder.stop();
-  if(audioStream){audioStream.getTracks().forEach(t=>t.stop()); audioStream=null;}
-  isRecording=false; isPaused=false;
-  if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
-  document.getElementById('liveText').classList.remove('show');
+  const doFinalize = () => {
+    if(audioStream){audioStream.getTracks().forEach(t=>t.stop()); audioStream=null;}
+    isRecording=false; isPaused=false;
+    if(window.ReactNativeWebView){
+      window.ReactNativeWebView.postMessage(JSON.stringify({type:'stopSR'}));
+    }
+    if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
+    document.getElementById('liveText').classList.remove('show');
+    if(allAudioChunks.length > 0) {
+      audioBlob = new Blob(allAudioChunks, {type:'audio/webm'});
+      if(recStartedAt){ recDurationMs += Date.now()-recStartedAt; recStartedAt=null; }
+      const _audioEl = document.getElementById('audioEl');
+      _audioEl.src = URL.createObjectURL(audioBlob);
+      document.getElementById('audioPlayer').classList.add('show');
+      initCustomPlayer(_audioEl, recDurationMs, 'audioBar', 'audioTimeDisp');
+    }
+  };
+  if(mediaRecorder && mediaRecorder.state!=='inactive') {
+    mediaRecorder.onstop = doFinalize;
+    mediaRecorder.stop();
+  } else {
+    doFinalize();
+  }
 }
 
 // ─── Start / Pause / Resume ───
@@ -617,6 +912,7 @@ function pauseBoth() {
   const btn = document.getElementById('startBtn');
   btn.textContent='▶ 再開'; btn.className='btn btn-full btn-primary';
   btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
+  document.getElementById('endBtn').disabled = false; // 一時停止中も終了できる
   updateTimerUI(); setStatus('','一時停止中'); toast('一時停止しました');
 }
 
@@ -641,14 +937,28 @@ function updateSpeakerBar() {
     nameEl.textContent='CL（'+clN+'）'; btn.className='switch-btn to-cc'; btn.textContent='CC に切替';
   }
 }
-function switchSpeaker() { currentSpeaker=currentSpeaker==='CC'?'CL':'CC'; updateSpeakerBar(); toast(currentSpeaker+' に切り替えました'); }
+function switchSpeaker() {
+  if(mainFlushBuffer) mainFlushBuffer();
+  currentSpeaker=currentSpeaker==='CC'?'CL':'CC';
+  updateSpeakerBar(); toast(currentSpeaker+' に切り替えました');
+}
 
 // ─── Speech ───
 function startSpeechRecognition() {
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) return;
-  speechRecognition=new SR(); speechRecognition.lang='ja-JP'; speechRecognition.continuous=true; speechRecognition.interimResults=true;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR) return;
+  speechRecognition=new SR();
+  speechRecognition.lang='ja-JP'; speechRecognition.continuous=true; speechRecognition.interimResults=true;
   const liveEl=document.getElementById('liveText'); liveEl.classList.add('show');
   let finalBuffer='', silenceTimer=null;
+  mainFlushBuffer = ()=>{
+    clearTimeout(silenceTimer);
+    if(!finalBuffer.trim()) return;
+    const el=TIMER_DURATION-timerSecondsLeft;
+    const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
+    entries.push({id:nextId++,label:currentSpeaker,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
+    renderEntries(); enableBtns(); finalBuffer=''; liveEl.textContent='';
+  };
   speechRecognition.onresult=event=>{
     let interim='',final='';
     for(let i=event.resultIndex;i<event.results.length;i++){
@@ -659,14 +969,7 @@ function startSpeechRecognition() {
     if(final.trim()){
       finalBuffer+=final; liveEl.textContent='✓ '+finalBuffer;
       clearTimeout(silenceTimer);
-      silenceTimer=setTimeout(()=>{
-        if(finalBuffer.trim()){
-          const el=TIMER_DURATION-timerSecondsLeft;
-          const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
-          entries.push({id:nextId++,label:currentSpeaker,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
-          renderEntries(); enableBtns(); finalBuffer=''; liveEl.textContent='';
-        }
-      },1800);
+      silenceTimer=setTimeout(mainFlushBuffer, 1800);
     }
   };
   speechRecognition.onerror=()=>{};
@@ -705,7 +1008,7 @@ function addRow(){entries.push({id:nextId++,label:currentSpeaker||'CC',text:'',n
 function toggleLabel(id){const e=entries.find(e=>e.id===id);if(e){e.label=e.label==='CC'?'CL':'CC';renderEntries();}}
 function updateField(id,field,val){const e=entries.find(e=>e.id===id);if(e)e[field]=val;}
 function delEntry(id){if(!confirm('この行を削除しますか？'))return;entries=entries.filter(e=>e.id!==id);renderEntries();}
-function enableBtns(){document.getElementById('pdfBtn').disabled=false;document.getElementById('correctBtn').disabled=false;}
+function enableBtns(){document.getElementById('correctBtn').disabled=false;}
 
 // ─── Correction ───
 function showCorrection(){document.getElementById('corrBar').classList.add('show');}
@@ -728,7 +1031,9 @@ function setStatus(type,text){
 
 // ─── PDF ───
 function downloadPdf(){
+  saveSession(); // PDF出力前に自動保存
   const ccN=document.getElementById('ccName').value||'CC', clN=document.getElementById('clName').value||'CL';
+  // 面談テーブル
   document.getElementById('pt-body').innerHTML=entries.map((e,i)=>{
     const lc=e.label==='CC'?'#2d7a5e':'#5a4a8e', name=e.label==='CC'?ccN:clN;
     return '<tr style="page-break-inside:avoid">'
@@ -740,24 +1045,410 @@ function downloadPdf(){
       +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#8a5510">'+(e.advice||'').replace(/</g,'&lt;')+'</td>'
       +'</tr>';
   }).join('');
-  const pt=document.getElementById('print-table'); pt.style.display='block';
+  // 口頭試問テーブル（データがある場合のみ表示）
+  const examPt=document.getElementById('exam-print-table');
+  if(examEntries.length>0){
+    document.getElementById('exam-pt-body').innerHTML=examEntries.map((e,i)=>{
+      const isQ=e.label==='Q', lc=isQ?'#2d7a5e':'#5a4a8e', name=isQ?'Q 試験官':'A 自分';
+      return '<tr style="page-break-inside:avoid">'
+        +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;color:#888;font-size:10px">'+String(i+1).padStart(2,'0')+'</td>'
+        +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center"><span style="display:inline-block;background:'+lc+';color:#fff;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:3px">'+e.label+'</span><br><span style="font-size:9px;color:#666">'+name+'</span></td>'
+        +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;font-size:10px;color:#888">'+(e.time||'—')+'</td>'
+        +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6">'+(e.text||'').replace(/</g,'&lt;')+'</td>'
+        +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#444">'+(e.notes||'').replace(/</g,'&lt;')+'</td>'
+        +'</tr>';
+    }).join('');
+    examPt.style.display='block';
+  }
+  document.getElementById('print-table').style.display='block';
   document.getElementById('memoBody').classList.add('open'); document.getElementById('memoToggle').classList.add('open');
-  window.onafterprint=()=>{pt.style.display='none';};
-  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
+  window.onafterprint=()=>{
+    document.getElementById('print-table').style.display='none';
+    examPt.style.display='none';
+  };
+  if(window.ReactNativeWebView){
+    // React Native WebView内：expo-printで出力
+    document.getElementById('memoBody').classList.add('open');
+    const memoVal = document.getElementById('memoText').value;
+    const memoHtml = memoVal ? '<div style="margin-top:12px;font-size:10px;border-top:1px solid #ccc;padding-top:8px"><strong>総合メモ・フィードバック</strong><p style="white-space:pre-wrap;margin-top:4px">' + memoVal.replace(/</g,'&lt;') + '</p></div>' : '';
+    const html = document.getElementById('print-table').outerHTML
+      + (examEntries.length>0 ? document.getElementById('exam-print-table').outerHTML : '')
+      + memoHtml;
+    window.ReactNativeWebView.postMessage(JSON.stringify({type:'print', html:html}));
+    document.getElementById('print-table').style.display='none';
+    if(examEntries.length>0) document.getElementById('exam-print-table').style.display='none';
+  } else {
+    requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
+  }
 }
 
 // ─── Audio ───
 function toggleAudio(){
   const audio=document.getElementById('audioEl'), btn=document.getElementById('audioPlayBtn');
-  if(audio.paused){audio.play();btn.textContent='■ 再生停止';btn.className='btn btn-danger';audio.onended=()=>{btn.textContent='▶ 再生';btn.className='btn';};}
-  else{audio.pause();audio.currentTime=0;btn.textContent='▶ 再生';btn.className='btn';}
+  if(audio.paused){audio.play();btn.textContent='■ 停止';btn.className='btn btn-danger';}
+  else{audio.pause();btn.textContent='▶ 再生';btn.className='btn';}
+  audio.onended=()=>{btn.textContent='▶ 再生';btn.className='btn';};
 }
-function downloadAudio(){
-  if(!audioBlob){toast('録音データがありません');return;}
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(audioBlob);
-  a.download='録音_'+(document.getElementById('sessionDate').value||'recording').replace(/-/g,'')+'.webm';
-  a.click(); toast('録音データをダウンロードしました');
+// downloadAudio → endSession/JS参照
+
+// ─── 口頭試問 Timer ───
+function fmtExam(s){return Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).toString().padStart(2,'0');}
+
+function setExamTimer(min){
+  if(isExamTimerRunning) return;
+  EXAM_DURATION=min*60; examSecondsLeft=EXAM_DURATION;
+  const el=document.getElementById('examRange');
+  const v=Math.min(Math.max(min,0),10);
+  if(el){ el.value=v; updateRangeBg(el, v, 10); document.getElementById('examRangeVal').textContent=min+'分'; }
+  updateExamTimerUI(); toast(min+'分にセットしました');
+}
+
+function setExamSliderVal(v){
+  v=Math.max(0,Math.min(v,10));
+  const mins=Math.max(1,v);
+  EXAM_DURATION=mins*60; examSecondsLeft=EXAM_DURATION;
+  document.getElementById('examRangeVal').textContent=mins+'分';
+  const ex=document.getElementById('examRange');
+  if(ex){ ex.value=v; updateRangeBg(ex, v, 10); }
+  updateExamTimerUI();
+}
+
+function onExamRangeChange(val){
+  if(isExamTimerRunning) return;
+  const v=parseInt(val);
+  const mins=Math.max(1,v);
+  EXAM_DURATION=mins*60; examSecondsLeft=EXAM_DURATION;
+  document.getElementById('examRangeVal').textContent=mins+'分';
+  const ex=document.getElementById('examRange');
+  if(ex) updateRangeBg(ex, v, 10);
+  updateExamTimerUI();
+}
+
+function updateExamTimerUI(){
+  const d=document.getElementById('examTimerDisplay');
+  const bar=document.getElementById('examTimerBar');
+  const lbl=document.getElementById('examTimerLbl');
+  bar.style.width=(examSecondsLeft/EXAM_DURATION*100)+'%';
+  d.textContent=fmtExam(examSecondsLeft);
+  if(examSecondsLeft<=60 && isExamTimerRunning){
+    d.className='timer-num warning'; bar.className='timer-bar warning';
+    lbl.textContent='残り '+examSecondsLeft+'秒';
+  } else if(isExamTimerRunning){
+    d.className='timer-num active'; bar.className='timer-bar';
+    lbl.textContent='残り '+fmtExam(examSecondsLeft);
+  } else {
+    d.className='timer-num'; bar.className='timer-bar';
+    lbl.textContent=examSecondsLeft===EXAM_DURATION?(EXAM_DURATION/60)+'分カウントダウン':'一時停止中 — '+fmtExam(examSecondsLeft);
+  }
+}
+
+function startExamCountdown(){
+  if(isExamTimerRunning) return;
+  isExamTimerRunning=true;
+  examTimerInterval=setInterval(()=>{ examSecondsLeft--; updateExamTimerUI(); if(examSecondsLeft<=0){clearInterval(examTimerInterval);isExamTimerRunning=false;onExamTimerEnd();} },1000);
+  updateExamTimerUI();
+}
+
+function onExamTimerEnd(){
+  beep();
+  document.getElementById('examTimerModal').classList.add('show');
+  // タイマー終了時に自動で確定
+  endExamSession();
+  toast('口頭試問終了 — 録音・記録を自動確定しました ✓');
+}
+
+function resetExamTimerFull(){
+  clearInterval(examTimerInterval); isExamTimerRunning=false; isExamPaused=false;
+  examSecondsLeft=EXAM_DURATION;
+  const btn=document.getElementById('examStartBtn');
+  btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
+  document.getElementById('examEndBtn').disabled = true;
+  updateExamTimerUI(); setExamStatus('','タイマーまたは録音を開始してください');
+}
+
+function toggleExamStart(){
+  if(!isExamRecording && !isExamTimerRunning && !isExamPaused){ startExamBoth(); }
+  else if(isExamRecording && !isExamPaused){ pauseExamBoth(); }
+  else if(isExamPaused){ resumeExamBoth(); }
+}
+
+async function startExamBoth(){
+  if(!isExamRecording && !isExamPaused){
+    examCurrentSpeaker='Q'; // 初回スタート時はQにリセット
+    updateExamSpeakerBar();
+  }
+  const ok=await startExamRec();
+  startExamCountdown();
+  const btn=document.getElementById('examStartBtn');
+  btn.textContent='⏸ 一時停止'; btn.className='btn btn-full btn-stop';
+  document.getElementById('examEndBtn').disabled = false;
+  setExamStatus('rec', ok?'録音中 + タイマー動作中':'タイマー動作中（マイク未使用）');
+}
+
+function pauseExamBoth(){
+  pauseExamRec(); clearInterval(examTimerInterval); isExamTimerRunning=false;
+  const btn=document.getElementById('examStartBtn');
+  btn.textContent='▶ 再開'; btn.className='btn btn-full btn-primary';
+  document.getElementById('examEndBtn').disabled = false; // 一時停止中も終了できる
+  updateExamTimerUI(); setExamStatus('','一時停止中'); toast('一時停止しました');
+}
+
+function resumeExamBoth(){
+  resumeExamRec(); startExamCountdown();
+  const btn=document.getElementById('examStartBtn');
+  btn.textContent='⏸ 一時停止'; btn.className='btn btn-full btn-stop';
+  setExamStatus('rec','録音中 + タイマー動作中'); toast('再開しました');
+}
+
+// ─── 口頭試問 Recording ───
+async function startExamRec(){
+  try{
+    examAudioStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    examAllChunks=[];
+    examMediaRecorder=new MediaRecorder(examAudioStream);
+    examMediaRecorder.ondataavailable=e=>{ if(e.data.size>0) examAllChunks.push(e.data); };
+    examMediaRecorder.start(500);
+    examRecDurationMs=0; examRecStartedAt=Date.now();
+    isExamRecording=true; isExamPaused=false;
+    startExamSpeechRecognition(); return true;
+  }catch(e){ toast('マイクへのアクセスが許可されていません'); return false; }
+}
+
+function pauseExamRec(){
+  if(examRecStartedAt){ examRecDurationMs += Date.now()-examRecStartedAt; examRecStartedAt=null; }
+  if(examMediaRecorder && examMediaRecorder.state==='recording') examMediaRecorder.pause();
+  isExamPaused=true;
+  if(examSpeechRecognition){try{examSpeechRecognition.stop();}catch(e){} examSpeechRecognition=null;}
+  document.getElementById('examLiveText').classList.remove('show');
+}
+
+function resumeExamRec(){
+  examRecStartedAt=Date.now();
+  if(examMediaRecorder && examMediaRecorder.state==='paused') examMediaRecorder.resume();
+  isExamPaused=false; startExamSpeechRecognition();
+}
+
+function finalizeExamRec(){
+  const doFinalize=()=>{
+    if(examAudioStream){examAudioStream.getTracks().forEach(t=>t.stop()); examAudioStream=null;}
+    isExamRecording=false; isExamPaused=false;
+    if(examSpeechRecognition){try{examSpeechRecognition.stop();}catch(e){} examSpeechRecognition=null;}
+    document.getElementById('examLiveText').classList.remove('show');
+    if(examAllChunks.length>0){
+      examAudioBlob=new Blob(examAllChunks,{type:'audio/webm'});
+      if(examRecStartedAt){ examRecDurationMs += Date.now()-examRecStartedAt; examRecStartedAt=null; }
+      const _examAudioEl=document.getElementById('examAudioEl');
+      _examAudioEl.src=URL.createObjectURL(examAudioBlob);
+      document.getElementById('examAudioPlayer').classList.add('show');
+      initCustomPlayer(_examAudioEl, examRecDurationMs, 'examAudioBar', 'examAudioTimeDisp');
+    }
+  };
+  if(examMediaRecorder && examMediaRecorder.state!=='inactive'){
+    examMediaRecorder.onstop=doFinalize; examMediaRecorder.stop();
+  } else { doFinalize(); }
+}
+
+// ─── 口頭試問 Speech Recognition ───
+function startExamSpeechRecognition(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR) return;
+  examSpeechRecognition=new SR();
+  examSpeechRecognition.lang='ja-JP'; examSpeechRecognition.continuous=true; examSpeechRecognition.interimResults=true;
+  const liveEl=document.getElementById('examLiveText'); liveEl.classList.add('show');
+  let finalBuffer='', silenceTimer=null;
+  examFlushBuffer = ()=>{
+    clearTimeout(silenceTimer);
+    if(!finalBuffer.trim()) return;
+    const el2=EXAM_DURATION-examSecondsLeft;
+    const mm=Math.floor(el2/60).toString().padStart(2,'0'), ss=(el2%60).toString().padStart(2,'0');
+    examEntries.push({id:examNextId++,label:examCurrentSpeaker,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
+    renderExamEntries(); finalBuffer=''; liveEl.textContent='';
+  };
+  examSpeechRecognition.onresult=e=>{
+    let interim='',final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript;
+      if(e.results[i].isFinal) final+=t; else interim+=t;
+    }
+    if(interim) liveEl.textContent='…'+interim;
+    if(final.trim()){
+      finalBuffer+=final; liveEl.textContent='✓ '+finalBuffer;
+      clearTimeout(silenceTimer);
+      silenceTimer=setTimeout(examFlushBuffer, 1800);
+    }
+  };
+  examSpeechRecognition.onerror=()=>{};
+  examSpeechRecognition.onend=()=>{ if(isExamRecording&&!isExamPaused) try{examSpeechRecognition.start();}catch(e){} };
+  try{examSpeechRecognition.start();}catch(e){}
+}
+// ─── 口頭試問 Entries (Q/A) ───
+function renderExamEntries(){
+  const empty=document.getElementById('examEmptyState');
+  const wrap=document.getElementById('examTableWrap');
+  const counter=document.getElementById('examEntryCounter');
+  if(!examEntries.length){empty.style.display='block';wrap.style.display='none';counter.textContent='—';return;}
+  empty.style.display='none'; wrap.style.display='block'; counter.textContent=examEntries.length+' 件';
+  document.getElementById('examCorrectBtn').disabled=false;
+  const examSel=document.getElementById('examCorrFrom');
+  if(examSel) examSel.innerHTML='<option value="">番号を選択</option>'+examEntries.map((e,i)=>`<option value="${i}">${String(i+1).padStart(2,'0')} (${e.label}): ${e.text.slice(0,18)}…</option>`).join('');
+  document.getElementById('examEntryList').innerHTML=examEntries.map((e,i)=>`
+    <div class="entry-card" id="ee-${e.id}">
+      <div class="entry-top">
+        <span class="entry-no">${String(i+1).padStart(2,'0')}</span>
+        <button class="label-pill ${e.label==='Q'?'CC':'CL'}" style="letter-spacing:.05em" onclick="toggleExamLabel(${e.id})">${e.label==='Q'?'Q 試験官':'A 自分'}</button>
+        ${e.time?`<span style="font-size:10px;color:var(--dim);margin-left:2px">${e.time}</span>`:''}
+        <button class="del-btn" onclick="delExamEntry(${e.id})">✕</button>
+      </div>
+      <textarea class="entry-ta" rows="3" oninput="updateExamField(${e.id},'text',this.value)" placeholder="逐語録">${esc(e.text)}</textarea>
+      <div class="entry-div"></div>
+      <div class="entry-sublbl">メモ・気づき</div>
+      <textarea class="entry-ta sub" rows="2" oninput="updateExamField(${e.id},'notes',this.value)" placeholder="メモ">${esc(e.notes)}</textarea>
+    </div>
+  `).join('');
+}
+
+function addExamRow(){examEntries.push({id:examNextId++,label:examCurrentSpeaker||'Q',text:'',notes:'',time:''});renderExamEntries();}
+function toggleExamLabel(id){const e=examEntries.find(e=>e.id===id);if(e){e.label=e.label==='Q'?'A':'Q';renderExamEntries();}}
+function updateExamField(id,field,val){const e=examEntries.find(e=>e.id===id);if(e)e[field]=val;}
+function delExamEntry(id){if(!confirm('この行を削除しますか？'))return;examEntries=examEntries.filter(e=>e.id!==id);renderExamEntries();}
+
+// ─── 口頭試問 Audio ───
+function toggleExamAudio(){
+  const audio=document.getElementById('examAudioEl'), btn=document.getElementById('examAudioPlayBtn');
+  if(audio.paused){audio.play();btn.textContent='■ 停止';btn.className='btn btn-danger';}
+  else{audio.pause();btn.textContent='▶ 再生';btn.className='btn';}
+  audio.onended=()=>{btn.textContent='▶ 再生';btn.className='btn';};
+}
+// downloadExamAudio → exam_extra_js参照
+
+// ─── 口頭試問 発言者切替 ───
+function switchExamSpeaker(){
+  if(examFlushBuffer) examFlushBuffer();
+  examCurrentSpeaker = examCurrentSpeaker === 'Q' ? 'A' : 'Q';
+  updateExamSpeakerBar();
+  toast(examCurrentSpeaker === 'Q' ? '🎤 Q 試験官' : '🎤 A 自分');
+}
+function updateExamSpeakerBar(){
+  const bar = document.getElementById('examSpeakerBar');
+  const nameEl = document.getElementById('examSpeakerName');
+  const btn = document.getElementById('examSwitchBtn');
+  if(examCurrentSpeaker === 'Q'){
+    bar.className='speaker-bar is-cc';
+    nameEl.className='speaker-name cc'; nameEl.textContent='Q 試験官';
+    btn.className='switch-btn to-cl'; btn.textContent='A 自分に切替';
+  } else {
+    bar.className='speaker-bar is-cl';
+    nameEl.className='speaker-name cl'; nameEl.textContent='A 自分';
+    btn.className='switch-btn to-cc'; btn.textContent='Q 試験官に切替';
+  }
+}
+
+// ─── 口頭試問 終了・録音確定 ───
+function endExamSession(){
+  clearInterval(examTimerInterval); isExamTimerRunning = false;
+  const btn = document.getElementById('examStartBtn');
+  btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
+  btn.disabled = true;
+  document.getElementById('examEndBtn').disabled = true;
+  document.getElementById('examSwitchBtn').disabled = true; // 発言者切替グレーアウト
+  document.getElementById('examRange').disabled = true;
+  document.querySelectorAll('#card-exam .btn:not(#examAudioPlayBtn):not([onclick*="downloadExamAudio"]):not([onclick*="toggleExamAudio"])').forEach(b => { b.disabled = true; });
+  finalizeExamRec();
+  setExamStatus('done','録音・記録 確定済み');
+  toast('口頭試問の録音と記録を確定しました');
+}
+
+// ─── 口頭試問 途中ダウンロード ───
+function downloadExamAudio(){
+  if(examAudioBlob){ _doDownloadExamAudio(examAudioBlob); return; }
+  const chunks = examAllChunks;
+  if(!chunks.length){ toast('録音データがありません'); return; }
+  const blob = new Blob(chunks, {type:'audio/webm'});
+  _doDownloadExamAudio(blob);
+  toast('録音中のデータをダウンロードしました');
+}
+function _doDownloadExamAudio(blob){
+  const filename='口頭試問_'+(document.getElementById('sessionDate').value||'recording').replace(/-/g,'')+'.webm';
+  if(window.ReactNativeWebView){
+    const reader=new FileReader();
+    reader.onloadend=()=>{
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type:'saveAudio', data:reader.result, filename:filename
+      }));
+    };
+    reader.readAsDataURL(blob);
+  } else {
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+  }
+}
+
+function setExamStatus(type,text){
+  document.getElementById('examStatusBar').className='status'+(type?' '+type:'');
+  document.getElementById('examStatusTxt').textContent=text;
+}
+
+// ─── 直前エントリのラベル修正 ───
+function fixLastEntry(){
+  if(!entries.length) return;
+  const last = entries[entries.length-1];
+  last.label = last.label==='CC' ? 'CL' : 'CC';
+  renderEntries();
+  toast('直前の発言を ' + last.label + ' に修正しました ✓');
+}
+
+function fixLastExamEntry(){
+  if(!examEntries.length) return;
+  const last = examEntries[examEntries.length-1];
+  last.label = last.label==='Q' ? 'A' : 'Q';
+  renderExamEntries();
+  toast('直前の発言を ' + (last.label==='Q'?'Q 試験官':'A 自分') + ' に修正しました ✓');
+}
+
+// ─── 口頭試問 一括訂正 ───
+function showExamCorrection(){document.getElementById('examCorrBar').classList.add('show');}
+function hideExamCorrection(){document.getElementById('examCorrBar').classList.remove('show');}
+function applyExamCorrection(){
+  const from=parseInt(document.getElementById('examCorrFrom').value);
+  if(isNaN(from)){toast('番号を選択してください');return;}
+  for(let i=from;i<examEntries.length;i++) examEntries[i].label=examEntries[i].label==='Q'?'A':'Q';
+  renderExamEntries();hideExamCorrection();toast((from+1)+'番目以降のQ/Aを入れ替えました ✓');
+}
+
+// ─── 口頭試問 PDF ───
+
+// ─── カスタムオーディオプレーヤー ───
+function fmtTime(ms){
+  const s=Math.floor(ms/1000), m=Math.floor(s/60);
+  return m+':'+(s%60).toString().padStart(2,'0');
+}
+
+function initCustomPlayer(audioEl, durationMs, barId, timeId){
+  const bar=document.getElementById(barId);
+  const timeDisp=document.getElementById(timeId);
+  const total=durationMs>0 ? durationMs : 0;
+  timeDisp.textContent='0:00 / '+fmtTime(total);
+
+  audioEl.addEventListener('timeupdate', ()=>{
+    const cur=audioEl.currentTime*1000;
+    const pct=total>0 ? Math.min(cur/total*100, 100) : 0;
+    bar.style.width=pct+'%';
+    timeDisp.textContent=fmtTime(cur)+' / '+fmtTime(total);
+  });
+  audioEl.addEventListener('ended', ()=>{
+    bar.style.width='0%';
+    timeDisp.textContent='0:00 / '+fmtTime(total);
+  });
+}
+
+function seekAudio(event, audioId){
+  const audioEl=document.getElementById(audioId);
+  if(!audioEl.src) return;
+  const bg=event.currentTarget;
+  const rect=bg.getBoundingClientRect();
+  const ratio=Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width));
+  const durMs = audioId==='audioEl' ? recDurationMs : examRecDurationMs;
+  audioEl.currentTime=(durMs/1000)*ratio;
 }
 
 // ─── Toast ───
