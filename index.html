@@ -263,7 +263,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     <div class="speaker-bar" id="speakerBar" style="margin-bottom:8px">
       <div class="speaker-label">現在の発言者</div>
       <div class="speaker-name cc" id="speakerName">CC</div>
-      <button class="switch-btn to-cl" id="switchBtn" onclick="switchSpeaker()">CLに切替</button>
+      <button class="switch-btn to-cl" id="switchBtn" onclick="switchSpeaker()" disabled>CLに切替</button>
     </div>
     <div style="font-size:11px;color:var(--muted);padding:4px 2px 8px;line-height:1.6">
       💡 話し終わった後に切り替えてください
@@ -410,7 +410,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     <div class="speaker-bar" id="examSpeakerBar" style="margin-bottom:8px">
       <div class="speaker-label">現在の発言者</div>
       <div class="speaker-name cc" id="examSpeakerName">Q 試験官</div>
-      <button class="switch-btn to-cl" id="examSwitchBtn" onclick="switchExamSpeaker()">A 自分に切替</button>
+      <button class="switch-btn to-cl" id="examSwitchBtn" onclick="switchExamSpeaker()" disabled>A 自分に切替</button>
     </div>
     <div style="font-size:11px;color:var(--muted);padding:4px 2px 8px;line-height:1.6">
       💡 話し終わった後に切り替えてください
@@ -927,6 +927,7 @@ function resumeBoth() {
   const btn = document.getElementById('startBtn');
   btn.textContent='⏸ 一時停止'; btn.className='btn btn-full btn-stop';
   btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
+  document.getElementById('switchBtn').disabled = false;
   setStatus('rec','録音中 + タイマー動作中'); toast('再開しました');
 }
 
@@ -1180,7 +1181,7 @@ function toggleExamStart(){
 
 async function startExamBoth(){
   if(!isExamRecording && !isExamPaused){
-    examCurrentSpeaker='Q'; // 初回スタート時はQにリセット
+    examCurrentSpeaker='Q';
     updateExamSpeakerBar();
   }
   const ok=await startExamRec();
@@ -1188,6 +1189,7 @@ async function startExamBoth(){
   const btn=document.getElementById('examStartBtn');
   btn.textContent='⏸ 一時停止'; btn.className='btn btn-full btn-stop';
   document.getElementById('examEndBtn').disabled = false;
+  document.getElementById('examSwitchBtn').disabled = false;
   setExamStatus('rec', ok?'録音中 + タイマー動作中':'タイマー動作中（マイク未使用）');
 }
 
