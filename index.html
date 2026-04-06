@@ -1248,79 +1248,36 @@ function finalizeExamRec(){
 
 // ─── 口頭試問 Speech Recognition ───
 function startExamSpeechRecognition(){
-  // 面談SRが動いていれば停止（ブラウザは同時1つのみ）
-  if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
-  const SR2=window.SpeechRecognition||window.webkitSpeechRecognition;
-  const liveEl=document.getElementById('examLiveText');
-  liveEl.classList.add('show');
-  if(window.ReactNativeWebView){
-    liveEl.textContent='🎤 音声認識中...';
-    liveEl.style.color='';
-    window.ReactNativeWebView.postMessage(JSON.stringify({type:'startExamSR', lang:'ja-JP'}));
-    return;
-  }
-  if(!SR2){
-    liveEl.textContent='⚠️ この環境では音声認識が使えません。記録は手動で入力してください。';
-    liveEl.style.color='var(--red)';
-    return;
-  }
-  liveEl.style.color='';
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR) return;
+  examSpeechRecognition=new SR();
+  examSpeechRecognition.lang='ja-JP'; examSpeechRecognition.continuous=true; examSpeechRecognition.interimResults=true;
+  const liveEl=document.getElementById('examLiveText'); liveEl.classList.add('show');
   let finalBuffer='', silenceTimer=null;
-  let segmentSpeaker = null;
-
-  examFlushBuffer = () => {
-    clearTimeout(silenceTimer);
-    if(finalBuffer.trim()){
-      const spk = segmentSpeaker || examCurrentSpeaker;
-      const el2=EXAM_DURATION-examSecondsLeft;
-      const mm=Math.floor(el2/60).toString().padStart(2,'0'), ss=(el2%60).toString().padStart(2,'0');
-      examEntries.push({id:examNextId++,label:spk,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
-      renderExamEntries(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
+  examSpeechRecognition.onresult=e=>{
+    let interim='',final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript;
+      if(e.results[i].isFinal) final+=t; else interim+=t;
     }
-  };
-
-  const onResult = (text, isFinal) => {
-    if(!isExamRecording || isExamPaused) return;
-    if(!isFinal){
-      if(segmentSpeaker===null) segmentSpeaker=examCurrentSpeaker;
-      liveEl.textContent='…'+text;
-    } else {
-      finalBuffer+=text; liveEl.textContent='✓ '+finalBuffer;
+    if(interim) liveEl.textContent='…'+interim;
+    if(final.trim()){
+      finalBuffer+=final; liveEl.textContent='✓ '+finalBuffer;
       clearTimeout(silenceTimer);
-      const spk = segmentSpeaker || examCurrentSpeaker;
       silenceTimer=setTimeout(()=>{
         if(finalBuffer.trim()){
           const el2=EXAM_DURATION-examSecondsLeft;
           const mm=Math.floor(el2/60).toString().padStart(2,'0'), ss=(el2%60).toString().padStart(2,'0');
-          examEntries.push({id:examNextId++,label:spk,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
-          renderExamEntries(); finalBuffer=''; segmentSpeaker=null; liveEl.textContent='';
+          examEntries.push({id:examNextId++,label:examCurrentSpeaker,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
+          renderExamEntries(); finalBuffer=''; liveEl.textContent='';
         }
-      },1200);
+      },1800);
     }
   };
-
-  if(window._useNativeSpeech){
-    window._speechCallback = onResult;
-    window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({type:'startSpeech'}));
-  } else {
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR) return;
-    examSpeechRecognition=new SR2();
-    examSpeechRecognition.lang='ja-JP'; examSpeechRecognition.continuous=true; examSpeechRecognition.interimResults=true;
-    examSpeechRecognition.onresult=e=>{
-      let interim='';
-      for(let i=e.resultIndex;i<e.results.length;i++){
-        if(e.results[i].isFinal) onResult(e.results[i][0].transcript, true);
-        else interim+=e.results[i][0].transcript;
-      }
-      if(interim) onResult(interim, false);
-    };
-    examSpeechRecognition.onerror=()=>{};
-    examSpeechRecognition.onend=()=>{ if(isExamRecording&&!isExamPaused) try{examSpeechRecognition.start();}catch(e){} };
-    try{examSpeechRecognition.start();}catch(e){}
-  }
+  examSpeechRecognition.onerror=()=>{};
+  examSpeechRecognition.onend=()=>{ if(isExamRecording&&!isExamPaused) try{examSpeechRecognition.start();}catch(e){} };
+  try{examSpeechRecognition.start();}catch(e){}
 }
-
 // ─── 口頭試問 Entries (Q/A) ───
 function renderExamEntries(){
   const empty=document.getElementById('examEmptyState');
