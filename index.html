@@ -640,14 +640,15 @@ function newSession() {
   setSliderVal(15, false);
   setExamSliderVal(5);
   // 確定後グレーアウトされたボタンを全て有効化
-  ['startBtn','endBtn','resetBtn','switchBtn','examStartBtn','examEndBtn','examSwitchBtn'].forEach(function(id){
+  ['startBtn','resetBtn','examStartBtn'].forEach(function(id){
     var el=document.getElementById(id); if(el){ el.disabled=false; }
   });
+  document.getElementById('endBtn').disabled=true;
+  document.getElementById('examEndBtn').disabled=true;
+  document.getElementById('switchBtn').disabled=true;
+  document.getElementById('examSwitchBtn').disabled=true;
   var tr=document.getElementById('timerRange'); if(tr) tr.disabled=false;
   var er=document.getElementById('examRange'); if(er) er.disabled=false;
-  document.querySelectorAll('#card-timer .btn, #card-exam .btn').forEach(function(b){ b.disabled=false; });
-  document.getElementById('endBtn').disabled=true; // スタート前はend無効
-  document.getElementById('examEndBtn').disabled=true;
   currentSpeaker = 'CC'; updateSpeakerBar(); renderEntries(); showPage('page-session');
 }
 
