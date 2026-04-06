@@ -938,7 +938,6 @@ function updateSpeakerBar() {
   }
 }
 function switchSpeaker() {
-  if(mainFlushBuffer) mainFlushBuffer(); // 切替前の発言を今の話者で即保存
   currentSpeaker=currentSpeaker==='CC'?'CL':'CC';
   updateSpeakerBar(); toast(currentSpeaker+' に切り替えました');
 }
@@ -950,41 +949,23 @@ function startSpeechRecognition() {
   speechRecognition=new SR();
   speechRecognition.lang='ja-JP'; speechRecognition.continuous=true; speechRecognition.interimResults=true;
   const liveEl=document.getElementById('liveText'); liveEl.classList.add('show');
-  let finalBuffer='', silenceTimer=null, segSpeaker=null;
-
-  // 切替時に呼ばれる：現在のバッファを今の話者で即保存
-  mainFlushBuffer = ()=>{
-    clearTimeout(silenceTimer);
-    if(finalBuffer.trim()){
-      const spk=segSpeaker||currentSpeaker;
-      const el=TIMER_DURATION-timerSecondsLeft;
-      const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
-      entries.push({id:nextId++,label:spk,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
-      renderEntries(); enableBtns(); finalBuffer=''; segSpeaker=null; liveEl.textContent='';
-    }
-  };
-
+  let finalBuffer='', silenceTimer=null;
   speechRecognition.onresult=event=>{
     let interim='',final='';
     for(let i=event.resultIndex;i<event.results.length;i++){
       const t=event.results[i][0].transcript;
       if(event.results[i].isFinal) final+=t; else interim+=t;
     }
-    if(interim){
-      if(!segSpeaker) segSpeaker=currentSpeaker;
-      liveEl.textContent='🎤 '+interim;
-    }
+    if(interim) liveEl.textContent='🎤 '+interim;
     if(final.trim()){
-      if(!segSpeaker) segSpeaker=currentSpeaker;
       finalBuffer+=final; liveEl.textContent='✓ '+finalBuffer;
       clearTimeout(silenceTimer);
-      const spk=segSpeaker;
       silenceTimer=setTimeout(()=>{
         if(finalBuffer.trim()){
           const el=TIMER_DURATION-timerSecondsLeft;
           const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
-          entries.push({id:nextId++,label:spk,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
-          renderEntries(); enableBtns(); finalBuffer=''; segSpeaker=null; liveEl.textContent='';
+          entries.push({id:nextId++,label:currentSpeaker,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
+          renderEntries(); enableBtns(); finalBuffer=''; liveEl.textContent='';
         }
       },1800);
     }
@@ -1272,40 +1253,23 @@ function startExamSpeechRecognition(){
   examSpeechRecognition=new SR();
   examSpeechRecognition.lang='ja-JP'; examSpeechRecognition.continuous=true; examSpeechRecognition.interimResults=true;
   const liveEl=document.getElementById('examLiveText'); liveEl.classList.add('show');
-  let finalBuffer='', silenceTimer=null, segSpeaker=null;
-
-  examFlushBuffer = ()=>{
-    clearTimeout(silenceTimer);
-    if(finalBuffer.trim()){
-      const spk=segSpeaker||examCurrentSpeaker;
-      const el2=EXAM_DURATION-examSecondsLeft;
-      const mm=Math.floor(el2/60).toString().padStart(2,'0'), ss=(el2%60).toString().padStart(2,'0');
-      examEntries.push({id:examNextId++,label:spk,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
-      renderExamEntries(); finalBuffer=''; segSpeaker=null; liveEl.textContent='';
-    }
-  };
-
+  let finalBuffer='', silenceTimer=null;
   examSpeechRecognition.onresult=e=>{
     let interim='',final='';
     for(let i=e.resultIndex;i<e.results.length;i++){
       const t=e.results[i][0].transcript;
       if(e.results[i].isFinal) final+=t; else interim+=t;
     }
-    if(interim){
-      if(!segSpeaker) segSpeaker=examCurrentSpeaker;
-      liveEl.textContent='…'+interim;
-    }
+    if(interim) liveEl.textContent='…'+interim;
     if(final.trim()){
-      if(!segSpeaker) segSpeaker=examCurrentSpeaker;
       finalBuffer+=final; liveEl.textContent='✓ '+finalBuffer;
       clearTimeout(silenceTimer);
-      const spk=segSpeaker;
       silenceTimer=setTimeout(()=>{
         if(finalBuffer.trim()){
           const el2=EXAM_DURATION-examSecondsLeft;
           const mm=Math.floor(el2/60).toString().padStart(2,'0'), ss=(el2%60).toString().padStart(2,'0');
-          examEntries.push({id:examNextId++,label:spk,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
-          renderExamEntries(); finalBuffer=''; segSpeaker=null; liveEl.textContent='';
+          examEntries.push({id:examNextId++,label:examCurrentSpeaker,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
+          renderExamEntries(); finalBuffer=''; liveEl.textContent='';
         }
       },1800);
     }
@@ -1356,7 +1320,6 @@ function toggleExamAudio(){
 
 // ─── 口頭試問 発言者切替 ───
 function switchExamSpeaker(){
-  if(examFlushBuffer) examFlushBuffer(); // 切替前の発言を今の話者で即保存
   examCurrentSpeaker = examCurrentSpeaker === 'Q' ? 'A' : 'Q';
   updateExamSpeakerBar();
   toast(examCurrentSpeaker === 'Q' ? '🎤 Q 試験官' : '🎤 A 自分');
