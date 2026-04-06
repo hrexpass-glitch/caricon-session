@@ -1451,68 +1451,6 @@ function seekAudio(event, audioId){
   audioEl.currentTime=(durMs/1000)*ratio;
 }
 
-// ─── RNネイティブ音声認識からの受信 ───
-window.onNativeSRResult = function(text, isFinal) {
-  const liveEl = document.getElementById('liveText');
-  if(!isRecording || isPaused) return;
-  liveEl.classList.add('show');
-  if(!isFinal){
-    liveEl.textContent = '🎤 ' + text;
-    liveEl.style.color = '';
-    return;
-  }
-  // 確定テキスト
-  if(text.trim()){
-    if(!window._srBuffer) window._srBuffer = '';
-    if(!window._srSpeaker) window._srSpeaker = currentSpeaker;
-    window._srBuffer += text;
-    liveEl.textContent = '✓ ' + window._srBuffer;
-    clearTimeout(window._srTimer);
-    const spk = window._srSpeaker;
-    window._srTimer = setTimeout(()=>{
-      if(window._srBuffer && window._srBuffer.trim()){
-        const el = TIMER_DURATION - timerSecondsLeft;
-        const mm = Math.floor(el/60).toString().padStart(2,'0');
-        const ss = (el%60).toString().padStart(2,'0');
-        entries.push({id:nextId++,label:spk,text:window._srBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
-        renderEntries(); enableBtns();
-        window._srBuffer = ''; window._srSpeaker = null; liveEl.textContent='';
-      }
-    }, 800);
-  }
-};
-
-window.onNativeExamSRResult = function(text, isFinal) {
-  const liveEl = document.getElementById('examLiveText');
-  if(!isExamRecording || isExamPaused) return;
-  liveEl.classList.add('show');
-  if(!isFinal){
-    liveEl.textContent = '🎤 ' + text;
-    liveEl.style.color = '';
-    return;
-  }
-  if(text.trim()){
-    if(!window._examSrBuffer) window._examSrBuffer = '';
-    if(!window._examSrSpeaker) window._examSrSpeaker = examCurrentSpeaker;
-    window._examSrBuffer += text;
-    liveEl.textContent = '✓ ' + window._examSrBuffer;
-    clearTimeout(window._examSrTimer);
-    const spk = window._examSrSpeaker;
-    window._examSrTimer = setTimeout(()=>{
-      if(window._examSrBuffer && window._examSrBuffer.trim()){
-        const el2 = EXAM_DURATION - examSecondsLeft;
-        const mm = Math.floor(el2/60).toString().padStart(2,'0');
-        const ss = (el2%60).toString().padStart(2,'0');
-        examEntries.push({id:examNextId++,label:spk,text:window._examSrBuffer.trim(),notes:'',time:mm+':'+ss});
-        renderExamEntries();
-        window._examSrBuffer = ''; window._examSrSpeaker = null; liveEl.textContent='';
-      }
-    }, 800);
-  }
-};
-
-
-
 // ─── Toast ───
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 </script>
