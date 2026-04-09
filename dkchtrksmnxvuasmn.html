@@ -1097,17 +1097,6 @@ function startSpeechRecognition() {
     return;
   }
 
-  // Android Chrome対策: continuous:false で発話ごとに再起動する方式
-  let finalBuffer='', silenceTimer=null;
-  mainFlushBuffer = ()=>{
-    clearTimeout(silenceTimer);
-    if(!finalBuffer.trim()) return;
-    const el=TIMER_DURATION-timerSecondsLeft;
-    const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
-    entries.push({id:nextId++,label:currentSpeaker,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
-    renderEntries(); enableBtns(); finalBuffer=''; liveEl.textContent='';
-  };
-
  let finalBuffer='', silenceTimer=null;  // ← buildSRの外に移動
 
   function buildSR(){
