@@ -289,7 +289,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
       </div>
       <audio id="audioEl" style="display:none"></audio>
       <div class="custom-audio-wrap">
-        <div class="custom-audio-bar-bg" onclick="seekAudio(event,'audioEl')">
+        <div class="custom-audio-bar-bg" onclick="seekAudio(event,'audioEl')" ontouchstart="seekAudio(event,'audioEl')">
           <div class="custom-audio-bar-fill" id="audioBar"></div>
         </div>
         <div class="custom-audio-time" id="audioTimeDisp">0:00 / 0:00</div>
@@ -440,7 +440,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
       </div>
       <audio id="examAudioEl" style="display:none"></audio>
       <div class="custom-audio-wrap">
-        <div class="custom-audio-bar-bg" onclick="seekAudio(event,'examAudioEl')">
+        <div class="custom-audio-bar-bg" onclick="seekAudio(event,'examAudioEl')" ontouchstart="seekAudio(event,'examAudioEl')">
           <div class="custom-audio-bar-fill" id="examAudioBar"></div>
         </div>
         <div class="custom-audio-time" id="examAudioTimeDisp">0:00 / 0:00</div>
@@ -567,6 +567,18 @@ let speechRecognition = null;
 let currentSpeaker = 'CC';
 
 document.getElementById('sessionDate').value = new Date().toISOString().split('T')[0];
+
+// ─── SpeechRecognition非対応ブラウザ（主にiOS）の案内バナー ───
+(function checkSRSupport(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR && !window.ReactNativeWebView){
+    const banner = document.createElement('div');
+    banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:999;background:#fff3cd;color:#856404;font-size:12px;padding:8px 14px;line-height:1.6;border-bottom:1px solid #ffc107;display:flex;align-items:flex-start;gap:10px;';
+    banner.innerHTML='<span style="flex:1">⚠️ <strong>このブラウザは音声の自動文字起こしに対応していません</strong>（iOS Safariなど）。<br>録音はできます。逐語録は終了後に手動入力してください。</span>'
+      +'<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#856404;font-size:18px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0">✕</button>';
+    document.body.insertBefore(banner, document.body.firstChild);
+  }
+})();
 
 // ─── タイマースライダー（ネイティブrange min=1 max=29 val=15=真ん中）───
 // ・初期背景はCSSで50%固定済み
@@ -865,12 +877,21 @@ function beep() {
 }
 
 // ─── Recording（一時停止→再開でも音声が途切れない）───
+// ─── MIMEタイプ検出（iOS対応）───
+function getBestMimeType() {
+  const types = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4','audio/aac',''];
+  for (const t of types) { try { if(!t || MediaRecorder.isTypeSupported(t)) return t; } catch(e){} }
+  return '';
+}
+const _recMime = getBestMimeType();
+
 async function startRec() {
   let hasAudio = false;
   try {
     audioStream = await navigator.mediaDevices.getUserMedia({audio:true});
     allAudioChunks = [];
-    mediaRecorder = new MediaRecorder(audioStream);
+    const opts = _recMime ? {mimeType: _recMime} : {};
+    mediaRecorder = new MediaRecorder(audioStream, opts);
     mediaRecorder.ondataavailable = e => { if(e.data.size>0) allAudioChunks.push(e.data); };
     mediaRecorder.start(500);
     recDurationMs=0; recStartedAt=Date.now();
@@ -935,12 +956,13 @@ function downloadAudio(){
   }
   const chunks = allAudioChunks;
   if(!chunks.length){ toast('録音データがありません'); return; }
-  const blob = new Blob(chunks, {type:'audio/webm'});
+  const blob = new Blob(chunks, {type: _recMime || 'audio/webm'});
   _doDownloadAudio(blob);
   toast('録音中のデータをダウンロードしました（終了後に完全版が取得できます）');
 }
 function _doDownloadAudio(blob){
-  const filename='録音_'+(document.getElementById('sessionDate').value||'recording').replace(/-/g,'')+'.webm';
+  const ext = (_recMime && _recMime.includes('mp4')) ? 'mp4' : (_recMime && _recMime.includes('ogg')) ? 'ogg' : 'webm';
+  const filename='録音_'+(document.getElementById('sessionDate').value||'recording').replace(/-/g,'')+'.'+ext;
   if(window.ReactNativeWebView){
     const reader=new FileReader();
     reader.onloadend=()=>{
@@ -969,7 +991,8 @@ function finalizeRec() {
     if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
     document.getElementById('liveText').classList.remove('show');
     if(allAudioChunks.length > 0) {
-      audioBlob = new Blob(allAudioChunks, {type:'audio/webm'});
+      const blobMime = _recMime || 'audio/webm';
+      audioBlob = new Blob(allAudioChunks, {type: blobMime});
       if(recStartedAt){ recDurationMs += Date.now()-recStartedAt; recStartedAt=null; }
       const _audioEl = document.getElementById('audioEl');
       _audioEl.src = URL.createObjectURL(audioBlob);
@@ -1062,7 +1085,16 @@ function startSpeechRecognition() {
     return;
   }
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR) return;
+  if(!SR) {
+    // iOS Safari等でSpeechRecognition非対応の場合
+    const liveEl=document.getElementById('liveText');
+    liveEl.classList.add('show');
+    liveEl.style.background='var(--surface2)';
+    liveEl.style.color='var(--muted)';
+    liveEl.style.fontStyle='normal';
+    liveEl.textContent='🎤 録音中（このブラウザでは自動文字起こし非対応 — 終了後に手動入力できます）';
+    return;
+  }
   speechRecognition=new SR();
   speechRecognition.lang='ja-JP'; speechRecognition.continuous=true; speechRecognition.interimResults=true;
   const liveEl=document.getElementById('liveText'); liveEl.classList.add('show');
@@ -1422,7 +1454,8 @@ async function startExamRec(){
   try{
     examAudioStream=await navigator.mediaDevices.getUserMedia({audio:true});
     examAllChunks=[];
-    examMediaRecorder=new MediaRecorder(examAudioStream);
+    const opts = _recMime ? {mimeType: _recMime} : {};
+    examMediaRecorder=new MediaRecorder(examAudioStream, opts);
     examMediaRecorder.ondataavailable=e=>{ if(e.data.size>0) examAllChunks.push(e.data); };
     examMediaRecorder.start(500);
     examRecDurationMs=0; examRecStartedAt=Date.now();
@@ -1475,7 +1508,8 @@ function finalizeExamRec(){
     if(examSpeechRecognition){try{examSpeechRecognition.stop();}catch(e){} examSpeechRecognition=null;}
     document.getElementById('examLiveText').classList.remove('show');
     if(examAllChunks.length>0){
-      examAudioBlob=new Blob(examAllChunks,{type:'audio/webm'});
+      const blobMime = _recMime || 'audio/webm';
+      examAudioBlob=new Blob(examAllChunks,{type: blobMime});
       if(examRecStartedAt){ examRecDurationMs += Date.now()-examRecStartedAt; examRecStartedAt=null; }
       const _examAudioEl=document.getElementById('examAudioEl');
       _examAudioEl.src=URL.createObjectURL(examAudioBlob);
@@ -1497,7 +1531,15 @@ function startExamSpeechRecognition(){
     return;
   }
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR) return;
+  if(!SR) {
+    const liveEl=document.getElementById('examLiveText');
+    liveEl.classList.add('show');
+    liveEl.style.background='var(--surface2)';
+    liveEl.style.color='var(--muted)';
+    liveEl.style.fontStyle='normal';
+    liveEl.textContent='🎤 録音中（このブラウザでは自動文字起こし非対応 — 終了後に手動入力できます）';
+    return;
+  }
   examSpeechRecognition=new SR();
   examSpeechRecognition.lang='ja-JP'; examSpeechRecognition.continuous=true; examSpeechRecognition.interimResults=true;
   const liveEl=document.getElementById('examLiveText'); liveEl.classList.add('show');
@@ -1634,12 +1676,13 @@ function downloadExamAudio(){
   if(examAudioBlob){ _doDownloadExamAudio(examAudioBlob); return; }
   const chunks = examAllChunks;
   if(!chunks.length){ toast('録音データがありません'); return; }
-  const blob = new Blob(chunks, {type:'audio/webm'});
+  const blob = new Blob(chunks, {type: _recMime || 'audio/webm'});
   _doDownloadExamAudio(blob);
   toast('録音中のデータをダウンロードしました');
 }
 function _doDownloadExamAudio(blob){
-  const filename='口頭試問_'+(document.getElementById('sessionDate').value||'recording').replace(/-/g,'')+'.webm';
+  const ext = (_recMime && _recMime.includes('mp4')) ? 'mp4' : (_recMime && _recMime.includes('ogg')) ? 'ogg' : 'webm';
+  const filename='口頭試問_'+(document.getElementById('sessionDate').value||'recording').replace(/-/g,'')+'.'+ext;
   if(window.ReactNativeWebView){
     const reader=new FileReader();
     reader.onloadend=()=>{
@@ -1717,7 +1760,9 @@ function seekAudio(event, audioId){
   if(!audioEl.src) return;
   const bg=event.currentTarget;
   const rect=bg.getBoundingClientRect();
-  const ratio=Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width));
+  // タッチとマウス両対応
+  const clientX = (event.touches && event.touches[0]) ? event.touches[0].clientX : event.clientX;
+  const ratio=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
   const durMs = audioId==='audioEl' ? recDurationMs : examRecDurationMs;
   audioEl.currentTime=(durMs/1000)*ratio;
 }
