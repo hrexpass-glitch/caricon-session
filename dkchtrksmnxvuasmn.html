@@ -1120,8 +1120,31 @@ function startSpeechRecognition() {
       silenceTimer=setTimeout(mainFlushBuffer, 1200);
     }
   };
-  speechRecognition.onerror=()=>{};
-  speechRecognition.onend=()=>{ if(isRecording&&!isPaused) try{speechRecognition.start();}catch(e){} };
+  speechRecognition.onerror=e=>{
+    // not-allowed: マイク拒否 → 再試行しない
+    if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+      liveEl.textContent='⚠️ マイクの使用が許可されていません。ブラウザの設定を確認してください。';
+      liveEl.style.background='var(--red-bg)'; liveEl.style.color='var(--red)';
+      return;
+    }
+    // network / aborted 等は無視して再開を onend に任せる
+  };
+  speechRecognition.onend=()=>{
+    if(isRecording&&!isPaused){
+      // Android Chromeでは同一オブジェクトの再start()が失敗することがあるため
+      // オブジェクトを作り直してから再起動する
+      setTimeout(()=>{
+        if(!isRecording||isPaused) return;
+        const newSR=new SR();
+        newSR.lang='ja-JP'; newSR.continuous=true; newSR.interimResults=true;
+        newSR.onresult=speechRecognition.onresult;
+        newSR.onerror=speechRecognition.onerror;
+        newSR.onend=speechRecognition.onend;
+        speechRecognition=newSR;
+        try{speechRecognition.start();}catch(e){}
+      }, 200);
+    }
+  };
   try{speechRecognition.start();}catch(e){}
 }
 
