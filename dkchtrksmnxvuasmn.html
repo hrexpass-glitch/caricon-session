@@ -1093,24 +1093,27 @@ function startSpeechRecognition() {
     liveEl.style.background='var(--surface2)';
     liveEl.style.color='var(--muted)';
     liveEl.style.fontStyle='normal';
-    liveEl.textContent='❌ [DEBUG] SpeechRecognition未対応のブラウザです（iOS Safariなど）';
+    liveEl.textContent='🎤 録音中（このブラウザでは自動文字起こし非対応 — 終了後に手動入力できます）';
     return;
   }
 
-  // デバッグログ用ヘルパー
-  const dbg=(msg)=>{
-    liveEl.style.background='var(--ac-lt)'; liveEl.style.color='var(--muted)'; liveEl.style.fontStyle='normal';
-    liveEl.textContent='[DEBUG] '+msg;
-    console.log('[SR DEBUG]', msg);
+  // Android Chrome対策: continuous:false で発話ごとに再起動する方式
+  let finalBuffer='', silenceTimer=null;
+  mainFlushBuffer = ()=>{
+    clearTimeout(silenceTimer);
+    if(!finalBuffer.trim()) return;
+    const el=TIMER_DURATION-timerSecondsLeft;
+    const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
+    entries.push({id:nextId++,label:currentSpeaker,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
+    renderEntries(); enableBtns(); finalBuffer=''; liveEl.textContent='';
   };
 
-  dbg('SR対応確認OK → start()呼び出し中...');
-
-  let retryCount=0;
   function buildSR(){
     const sr=new SR();
-    sr.lang='ja-JP'; sr.continuous=true; sr.interimResults=true;
-    sr.onstart=()=>{ dbg('onstart fired ✓ — 話しかけてください'); };
+    sr.lang='ja-JP';
+    sr.continuous=false;       // Android Chrome対策: falseにして発話ごとに再起動
+    sr.interimResults=true;
+    sr.maxAlternatives=1;
     sr.onresult=event=>{
       let interim='',final='';
       for(let i=event.resultIndex;i<event.results.length;i++){
@@ -1128,38 +1131,26 @@ function startSpeechRecognition() {
     sr.onerror=e=>{
       if(e.error==='not-allowed'||e.error==='service-not-allowed'){
         liveEl.style.background='var(--red-bg)'; liveEl.style.color='var(--red)'; liveEl.style.fontStyle='normal';
-        liveEl.textContent='❌ [DEBUG] エラー: '+e.error+' — マイク許可を確認してください';
+        liveEl.textContent='⚠️ マイクの使用が許可されていません。ブラウザの設定を確認してください。';
         return;
       }
-      dbg('onerror: '+e.error+' → onendで再起動予定');
+      // no-speech, network, aborted等はonendで再起動
     };
     sr.onend=()=>{
-      retryCount++;
-      dbg('onend fired (retry #'+retryCount+') isRecording='+isRecording+' isPaused='+isPaused);
       if(isRecording&&!isPaused){
         setTimeout(()=>{
           if(!isRecording||isPaused) return;
-          dbg('再起動中... (retry #'+retryCount+')');
           speechRecognition=buildSR();
-          try{speechRecognition.start();}catch(e){ dbg('start()失敗: '+e.message); }
-        }, 200);
+          try{speechRecognition.start();}catch(e){}
+        }, 100);
       }
     };
     return sr;
   }
 
-  let finalBuffer='', silenceTimer=null;
-  mainFlushBuffer = ()=>{
-    clearTimeout(silenceTimer);
-    if(!finalBuffer.trim()) return;
-    const el=TIMER_DURATION-timerSecondsLeft;
-    const mm=Math.floor(el/60).toString().padStart(2,'0'), ss=(el%60).toString().padStart(2,'0');
-    entries.push({id:nextId++,label:currentSpeaker,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
-    renderEntries(); enableBtns(); finalBuffer=''; liveEl.textContent='';
-  };
-
+  liveEl.textContent='🎤 音声認識中...';
   speechRecognition=buildSR();
-  try{speechRecognition.start();}catch(e){ dbg('初回start()失敗: '+e.message); }
+  try{speechRecognition.start();}catch(e){}
 }
 
 // ─── Entries ───
