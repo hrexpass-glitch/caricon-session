@@ -1108,6 +1108,8 @@ function startSpeechRecognition() {
     renderEntries(); enableBtns(); finalBuffer=''; liveEl.textContent='';
   };
 
+  // FIX: buildSR外に出してリスタート時にリセットされないようにする
+  let finalBuffer='', silenceTimer=null
   function buildSR(){
     const sr=new SR();
     sr.lang='ja-JP';
