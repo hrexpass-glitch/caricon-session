@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>限定公開</title>
+</head>
+<body style="text-align:center; padding-top:100px; font-family:sans-serif; background-color:#f4f4f4;">
+
+    <div style="background:white; display:inline-block; padding:30px; border-radius:10px; shadow:0 2px 5px rgba(0,0,0,0.1);">
+        <h2>合言葉を入力してください</h2>
+        <input type="password" id="pass" style="padding:10px; font-size:16px; border:1px solid #ccc; border-radius:5px;">
+        <button onclick="checkPass()" style="padding:10px 20px; font-size:16px; background:#333; color:white; border:none; border-radius:5px; cursor:pointer; margin-left:10px;">進む</button>
+    </div>
+
+    <script>
+        function checkPass() {
+            const input = document.getElementById('pass').value;
+            // ★ここを好きな合言葉に変えてください
+            const correctPass = "0409"; 
+
+            if (input === correctPass) {
+                // ★ここを「1」で決めた隠しファイル名と同じにします
+                location.href = "dkchtrksmnxvuasmn.html"; 
+            } else {
+                alert("合言葉が違います");
+            }
+        }
+    </script>
+</body>
+</html>
