@@ -1110,6 +1110,8 @@ function startSpeechRecognition() {
 
  let finalBuffer='', silenceTimer=null;  // ← buildSRの外に移動
   
+let finalBuffer='', silenceTimer=null;  // ← buildSRの外に移動
+  
   function buildSR(){
     const sr=new SR();
     sr.lang='ja-JP';
