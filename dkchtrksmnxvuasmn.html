@@ -546,9 +546,9 @@ let isTimerRunning = false, timerInterval = null;
 let isRecording = false, isPaused = false;
 let mediaRecorder = null, audioStream = null;
 let allAudioChunks = [], audioBlob = null;
-let recStartedAt = null, recDurationMs = 0; // 録音時間を自前計測
-let audioCtx = null, gainNode = null; // 一時停止中ミュート用
-let savedChunks = []; // 一時停止をまたいで蓄積
+let recStartedAt = null, recDurationMs = 0;
+let audioCtx = null, gainNode = null;
+let savedChunks = [];
 // 口頭試問
 let EXAM_DURATION = 5 * 60;
 let examSecondsLeft = EXAM_DURATION;
@@ -558,8 +558,8 @@ let examMediaRecorder = null, examAudioStream = null;
 let examAllChunks = [], examSavedChunks = [], examAudioBlob = null;
 let examRecStartedAt = null, examRecDurationMs = 0;
 let examAudioCtx = null, examGainNode = null;
-let examFlushBuffer = null; // 切替時にバッファを強制フラッシュ
-let mainFlushBuffer = null; // 面談側も同様
+let examFlushBuffer = null;
+let mainFlushBuffer = null;
 let examSpeechRecognition = null;
 let examEntries = [], examNextId = 1;
 let examCurrentSpeaker = 'Q';
@@ -580,12 +580,8 @@ document.getElementById('sessionDate').value = new Date().toISOString().split('T
   }
 })();
 
-// ─── タイマースライダー（ネイティブrange min=1 max=29 val=15=真ん中）───
-// ・初期背景はCSSで50%固定済み
-// ・JS操作時のfillは (val-1)/28*100% のシンプル式（中央では完全一致）
-// min=0,max=28,value=14 → 14/28=50%が完全中央 → 表示はval+1=15分
-let sliderVal = 15;     // 面談タイマー：デフォルト15分
-let examSliderVal = 5; // 口頭試問タイマー：デフォルト5分
+let sliderVal = 15;
+let examSliderVal = 5;
 
 function updateRangeBg(el, val, maxVal) {
   const pct = (val / maxVal * 100).toFixed(1);
@@ -597,7 +593,7 @@ function updateRangeBg(el, val, maxVal) {
 }
 
 function setSliderVal(rawVal) {
-  rawVal = Math.max(1, Math.min(30, rawVal)); // min=1に合わせてクランプ
+  rawVal = Math.max(1, Math.min(30, rawVal));
   sliderVal = rawVal;
   const el = document.getElementById('timerRange');
   if (el) { el.value = rawVal; updateRangeBg(el, rawVal, 30); }
@@ -611,7 +607,6 @@ function onRangeChange(val) {
   setSliderVal(Math.max(1, parseInt(val)));
 }
 
-// showPage後にgradientを再計算（FIX: examSliderVal使用・max=9バグ修正）
 function refreshSliderBg() {
   const el = document.getElementById('timerRange');
   if (el) updateRangeBg(el, sliderVal, 30);
@@ -666,7 +661,6 @@ function newSession() {
   document.getElementById('examAudioPlayer').classList.remove('show');
   examEntries=[]; examNextId=1; examAudioBlob=null; examAllChunks=[];
   examCurrentSpeaker='Q'; finalizeExamRec();
-  // FIX: _resetExamCoreはexamEntries=[]するので使わない。タイマーUIだけリセット
   clearInterval(examTimerInterval); isExamTimerRunning=false; isExamPaused=false;
   examSecondsLeft=EXAM_DURATION;
   const _esb=document.getElementById('examStartBtn');
@@ -676,7 +670,6 @@ function newSession() {
   renderExamEntries();
   setSliderVal(15);
   setExamSliderVal(5);
-  // 確定後グレーアウトされたボタンを全て有効化
   ['startBtn','resetBtn','examStartBtn','examSwitchBtn','switchBtn'].forEach(function(id){
     var el=document.getElementById(id); if(el){ el.disabled=false; }
   });
@@ -709,7 +702,6 @@ function openSession(id) {
   examNextId = examEntries.length ? Math.max(...examEntries.map(e=>e.id))+1 : 1;
   examAudioBlob=null; examAllChunks=[];
   examCurrentSpeaker='Q'; finalizeExamRec();
-  // FIX: _resetExamCoreはexamEntries=[]するので使わない。タイマーUIだけリセット
   clearInterval(examTimerInterval); isExamTimerRunning=false; isExamPaused=false;
   examSecondsLeft=EXAM_DURATION;
   const _esb=document.getElementById('examStartBtn');
@@ -718,7 +710,6 @@ function openSession(id) {
   updateExamTimerUI();
   renderExamEntries();
   setSliderVal(15); setExamSliderVal(5);
-  // FIX: _resetTimerCoreはentries=[]するので使わない。タイマーUIだけリセット
   clearInterval(timerInterval); isTimerRunning = false; isPaused = false;
   timerSecondsLeft = TIMER_DURATION;
   const _sb = document.getElementById('startBtn');
@@ -728,7 +719,6 @@ function openSession(id) {
   renderEntries();
   if (entries.length) enableBtns();
   if (examEntries.length) document.getElementById('examCorrectBtn').disabled=false;
-  // 前セッションのdisabled状態を確実にリセット
   ['startBtn','resetBtn','examStartBtn','examSwitchBtn','switchBtn'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.disabled=false;
   });
@@ -781,7 +771,6 @@ function showPage(id) {
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
   if (id === 'page-session') {
-    // FIX: ページ表示後にスライダーを再描画（ex.valueではなく保存済み変数を使う）
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         updateRangeBg(document.getElementById('timerRange'), sliderVal, 30);
@@ -797,10 +786,9 @@ function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).
 
 function setTimer(min) {
   if (isTimerRunning) return;
-  setSliderVal(Math.min(Math.max(min, 1), 30)); // setSliderVal内でTIMER_DURATIONも更新される
+  setSliderVal(Math.min(Math.max(min, 1), 30));
   toast(min+'分にセットしました');
 }
-
 
 function updateTimerUI() {
   const d = document.getElementById('timerDisplay');
@@ -857,7 +845,6 @@ function resetTimerFull() {
 function onTimerEnd() {
   beep();
   document.getElementById('timerModal').classList.add('show');
-  // タイマー終了時に自動で確定（endSessionと同等）
   endSession();
   saveSession();
   toast('タイマー終了 — 録音・逐語録を自動確定しました ✓');
@@ -876,8 +863,7 @@ function beep() {
   } catch(e){}
 }
 
-// ─── Recording（一時停止→再開でも音声が途切れない）───
-// ─── MIMEタイプ検出（iOS対応）───
+// ─── MIMEタイプ検出 ───
 function getBestMimeType() {
   const types = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4','audio/aac',''];
   for (const t of types) { try { if(!t || MediaRecorder.isTypeSupported(t)) return t; } catch(e){} }
@@ -896,9 +882,7 @@ async function startRec() {
     mediaRecorder.start(500);
     recDurationMs=0; recStartedAt=Date.now();
     hasAudio = true;
-  } catch(e) {
-    // 録音は失敗してもSR（逐語録）は続行する
-  }
+  } catch(e) {}
   isRecording=true; isPaused=false;
   startSpeechRecognition();
   return hasAudio;
@@ -920,7 +904,6 @@ function resumeRec() {
   recStartedAt=Date.now();
   if(mediaRecorder && mediaRecorder.state==='paused') mediaRecorder.resume();
   isPaused=false;
-  // 再開時にバッファリセット（一時停止中の残留データを除去）
   window._nativeLatestText = '';
   window._nativeSpeakerSnap = null;
   clearTimeout(window._nativeSilenceTimer);
@@ -930,27 +913,22 @@ function resumeRec() {
   startSpeechRecognition();
 }
 
-
 // ─── 面談 終了・録音確定 ───
 function endSession() {
   clearInterval(timerInterval); isTimerRunning = false;
   const btn = document.getElementById('startBtn');
   btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
   btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
-  // タイマー・録音操作をグレーアウト（再生・ダウンロードは除く）
   btn.disabled = true;
   document.getElementById('endBtn').disabled = true;
   document.getElementById('timerRange').disabled = true;
-  // プリセットボタンもグレーアウト
   document.querySelectorAll('#card-timer .btn:not(#audioPlayBtn):not([onclick*="downloadAudio"]):not([onclick*="toggleAudio"]):not([onclick*="setTimer"])').forEach(b => { b.disabled = true; });
   finalizeRec();
   setStatus('done','録音・逐語録 確定済み');
   toast('録音と逐語録を確定しました');
 }
 
-// ─── 録音中でも途中ダウンロード ───
 function downloadAudio(){
-  // 録音確定済みblob優先、なければ現在のchunksをその場でBlob化
   if(audioBlob){
     _doDownloadAudio(audioBlob); return;
   }
@@ -1022,7 +1000,7 @@ async function startBoth() {
   const btn = document.getElementById('startBtn');
   btn.textContent='⏸ 一時停止'; btn.className='btn btn-full btn-stop';
   btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
-  document.getElementById('endBtn').disabled = false; // FIX: 録音開始と同時に終了ボタンを有効化
+  document.getElementById('endBtn').disabled = false;
   setStatus('rec', ok?'録音中 + タイマー動作中':'タイマー動作中（マイク未使用）');
 }
 
@@ -1031,7 +1009,7 @@ function pauseBoth() {
   const btn = document.getElementById('startBtn');
   btn.textContent='▶ 再開'; btn.className='btn btn-full btn-primary';
   btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
-  document.getElementById('endBtn').disabled = false; // 一時停止中も終了できる
+  document.getElementById('endBtn').disabled = false;
   updateTimerUI(); setStatus('','一時停止中'); toast('一時停止しました');
 }
 
@@ -1057,9 +1035,7 @@ function updateSpeakerBar() {
   }
 }
 function switchSpeaker() {
-  // 切替前に蓄積バッファを強制フラッシュ
   if(mainFlushBuffer) mainFlushBuffer();
-  // RN環境のネイティブバッファもリセット
   if(window._nativeLatestText && window._nativeLatestText.trim()){
     const el = TIMER_DURATION - timerSecondsLeft;
     const mm = Math.floor(el/60).toString().padStart(2,'0'), ss = (el%60).toString().padStart(2,'0');
@@ -1075,9 +1051,8 @@ function switchSpeaker() {
   updateSpeakerBar(); toast(currentSpeaker+' に切り替えました');
 }
 
-// ─── Speech ───
+// ─── Speech Recognition（Android Chrome対応・buildSRパターン）───
 function startSpeechRecognition() {
-  // RN環境ではネイティブSRを使用
   if(window.ReactNativeWebView){
     document.getElementById('liveText').classList.add('show');
     document.getElementById('liveText').textContent='🎤 音声認識中...';
@@ -1097,7 +1072,18 @@ function startSpeechRecognition() {
     return;
   }
 
- let finalBuffer='', silenceTimer=null;  // ← buildSRの外に移動
+  let finalBuffer='', silenceTimer=null;
+
+  // ★ Fix: mainFlushBufferをグローバルに代入（switchSpeakerから呼べるように）
+  mainFlushBuffer = () => {
+    clearTimeout(silenceTimer);
+    if(!finalBuffer.trim()) return;
+    const el = TIMER_DURATION - timerSecondsLeft;
+    const mm = Math.floor(el/60).toString().padStart(2,'0'), ss = (el%60).toString().padStart(2,'0');
+    entries.push({id:nextId++, label:currentSpeaker, text:finalBuffer.trim(), notes:'', advice:'', time:mm+':'+ss});
+    renderEntries(); enableBtns();
+    finalBuffer = ''; liveEl.textContent = '';
+  };
 
   function buildSR(){
     const sr=new SR();
@@ -1125,15 +1111,15 @@ function startSpeechRecognition() {
         liveEl.textContent='⚠️ マイクの使用が許可されていません。ブラウザの設定を確認してください。';
         return;
       }
-      // no-speech, network, aborted等はonendで再起動
     };
     sr.onend=()=>{
       if(isRecording&&!isPaused){
+        // ★ Fix: Android対応のため200msに延長
         setTimeout(()=>{
           if(!isRecording||isPaused) return;
           speechRecognition=buildSR();
           try{speechRecognition.start();}catch(e){}
-        }, 100);
+        }, 200);
       }
     };
     return sr;
@@ -1179,7 +1165,6 @@ function insertRowAfter(id){
   const newEntry={id:nextId++,label:entries[idx].label,text:'',notes:'',advice:'',time:''};
   entries.splice(idx+1,0,newEntry);
   renderEntries();enableBtns();
-  // 挿入した行にフォーカス
   setTimeout(()=>{
     const ta=document.querySelector('#ec-'+newEntry.id+' .entry-ta');
     if(ta) ta.focus();
@@ -1225,7 +1210,6 @@ function _buildPdfHtml(){
   const TD='border:1px solid #ccc;padding:4px 5px;vertical-align:top;font-size:9px;color:#222;';
   const TH='border:1px solid #ccc;padding:4px 5px;background:#f2f2f0;font-size:8px;color:#333;text-align:center;';
 
-  // ヘッダー情報
   let html='<div style="margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #333;">'
     +'<div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#111;">'+_esc(titleVal)+'</div>'
     +'<table style="border-collapse:collapse;font-size:9px;width:100%;"><tr>'
@@ -1239,7 +1223,6 @@ function _buildPdfHtml(){
     +(noteVal?'<div style="font-size:9px;color:#555;margin-top:4px;">メモ：'+_esc(noteVal)+'</div>':'')
     +'</div>';
 
-  // 面談逐語録テーブル
   if(entries.length>0){
     html+='<div style="font-size:11px;font-weight:700;margin:8px 0 4px;border-bottom:1px solid #333;padding-bottom:2px;color:#111;">面談逐語録</div>'
       +'<table style="width:100%;border-collapse:collapse;table-layout:fixed;word-break:break-all;">'
@@ -1269,7 +1252,6 @@ function _buildPdfHtml(){
     html+='</tbody></table>';
   }
 
-  // 口頭試問テーブル
   if(examEntries.length>0){
     html+='<div style="font-size:11px;font-weight:700;margin:16px 0 4px;border-bottom:1px solid #333;padding-bottom:2px;color:#111;">口頭試問記録</div>'
       +'<table style="width:100%;border-collapse:collapse;table-layout:fixed;word-break:break-all;">'
@@ -1300,7 +1282,6 @@ function _buildPdfHtml(){
     html+='</tbody></table>';
   }
 
-  // 総合メモ
   if(memoVal){
     html+='<div style="margin-top:16px;padding-top:8px;border-top:1px solid #ccc;">'
       +'<div style="font-size:10px;font-weight:700;margin-bottom:4px;color:#111;">総合メモ・フィードバック</div>'
@@ -1317,7 +1298,6 @@ function downloadPdf(){
     const html = _buildPdfHtml();
     window.ReactNativeWebView.postMessage(JSON.stringify({type:'print', html:html}));
   } else {
-    // ブラウザ版：Android版と完全に同じ_buildPdfHtml()を使って印刷
     const html = _buildPdfHtml();
     const CSS = `
       *{box-sizing:border-box;margin:0;padding:0;}
@@ -1343,19 +1323,18 @@ function toggleAudio(){
   else{audio.pause();btn.textContent='▶ 再生';btn.className='btn';}
   audio.onended=()=>{btn.textContent='▶ 再生';btn.className='btn';};
 }
-// downloadAudio → endSession/JS参照
 
 // ─── 口頭試問 Timer ───
 function fmtExam(s){return Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).toString().padStart(2,'0');}
 
 function setExamTimer(min){
   if(isExamTimerRunning) return;
-  setExamSliderVal(Math.min(Math.max(min, 1), 10)); // FIX: setExamSliderVal経由でexamSliderValも更新
+  setExamSliderVal(Math.min(Math.max(min, 1), 10));
   toast(min+'分にセットしました');
 }
 
 function setExamSliderVal(v){
-  v = Math.max(1, Math.min(10, v)); // min=1に合わせてクランプ
+  v = Math.max(1, Math.min(10, v));
   examSliderVal = v;
   EXAM_DURATION = v * 60; examSecondsLeft = EXAM_DURATION;
   document.getElementById('examRangeVal').textContent = v + '分';
@@ -1403,7 +1382,6 @@ function startExamCountdown(){
 function onExamTimerEnd(){
   beep();
   document.getElementById('examTimerModal').classList.add('show');
-  // タイマー終了時に自動で確定
   endExamSession();
   toast('口頭試問終了 — 録音・記録を自動確定しました ✓');
 }
@@ -1456,7 +1434,7 @@ function pauseExamBoth(){
   pauseExamRec(); clearInterval(examTimerInterval); isExamTimerRunning=false;
   const btn=document.getElementById('examStartBtn');
   btn.textContent='▶ 再開'; btn.className='btn btn-full btn-primary';
-  document.getElementById('examEndBtn').disabled = false; // 一時停止中も終了できる
+  document.getElementById('examEndBtn').disabled = false;
   updateExamTimerUI(); setExamStatus('','一時停止中'); toast('一時停止しました');
 }
 
@@ -1479,9 +1457,7 @@ async function startExamRec(){
     examMediaRecorder.start(500);
     examRecDurationMs=0; examRecStartedAt=Date.now();
     hasAudio = true;
-  }catch(e){
-    // 録音は失敗してもSR（逐語録）は続行する
-  }
+  }catch(e){}
   isExamRecording=true; isExamPaused=false;
   startExamSpeechRecognition(); return hasAudio;
 }
@@ -1504,7 +1480,6 @@ function resumeExamRec(){
   isExamPaused=false;
   window._nativeExamLatestText = '';
   window._nativeExamSpeakerSnap = null;
-  
   clearTimeout(window._nativeExamTimer);
   window._nativeExamTimer = null;
   const liveEl = document.getElementById('examLiveText');
@@ -1518,7 +1493,6 @@ function finalizeExamRec(){
     isExamRecording=false; isExamPaused=false;
     window._nativeExamLatestText = '';
     window._nativeExamSpeakerSnap = null;
-    
     clearTimeout(window._nativeExamTimer);
     window._nativeExamTimer = null;
     if(window.ReactNativeWebView){
@@ -1541,7 +1515,7 @@ function finalizeExamRec(){
   } else { doFinalize(); }
 }
 
-// ─── 口頭試問 Speech Recognition ───
+// ─── 口頭試問 Speech Recognition（Android Chrome対応・buildSRパターンに統一）───
 function startExamSpeechRecognition(){
   if(window.ReactNativeWebView){
     document.getElementById('examLiveText').classList.add('show');
@@ -1550,44 +1524,73 @@ function startExamSpeechRecognition(){
     return;
   }
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR) {
-    const liveEl=document.getElementById('examLiveText');
-    liveEl.classList.add('show');
+  const liveEl=document.getElementById('examLiveText');
+  liveEl.classList.add('show');
+  if(!SR){
     liveEl.style.background='var(--surface2)';
     liveEl.style.color='var(--muted)';
     liveEl.style.fontStyle='normal';
     liveEl.textContent='🎤 録音中（このブラウザでは自動文字起こし非対応 — 終了後に手動入力できます）';
     return;
   }
-  examSpeechRecognition=new SR();
-  examSpeechRecognition.lang='ja-JP'; examSpeechRecognition.continuous=true; examSpeechRecognition.interimResults=true;
-  const liveEl=document.getElementById('examLiveText'); liveEl.classList.add('show');
+
   let finalBuffer='', silenceTimer=null;
+
+  // ★ Fix: examFlushBufferをグローバルに代入（switchExamSpeakerから呼べるように）
   examFlushBuffer = ()=>{
     clearTimeout(silenceTimer);
     if(!finalBuffer.trim()) return;
     const el2=EXAM_DURATION-examSecondsLeft;
     const mm=Math.floor(el2/60).toString().padStart(2,'0'), ss=(el2%60).toString().padStart(2,'0');
-    examEntries.push({id:examNextId++,label:examCurrentSpeaker,text:finalBuffer.trim(),notes:'',time:mm+':'+ss});
+    examEntries.push({id:examNextId++,label:examCurrentSpeaker,text:finalBuffer.trim(),notes:'',advice:'',time:mm+':'+ss});
     renderExamEntries(); finalBuffer=''; liveEl.textContent='';
   };
-  examSpeechRecognition.onresult=e=>{
-    let interim='',final='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      const t=e.results[i][0].transcript;
-      if(e.results[i].isFinal) final+=t; else interim+=t;
-    }
-    if(interim) liveEl.textContent='…'+interim;
-    if(final.trim()){
-      finalBuffer+=final; liveEl.textContent='✓ '+finalBuffer;
-      clearTimeout(silenceTimer);
-      silenceTimer=setTimeout(examFlushBuffer, 1200);
-    }
-  };
-  examSpeechRecognition.onerror=()=>{};
-  examSpeechRecognition.onend=()=>{ if(isExamRecording&&!isExamPaused) try{examSpeechRecognition.start();}catch(e){} };
+
+  // ★ Fix: continuous:falseのbuildSRパターンに統一（Android Chrome対応）
+  function buildExamSR(){
+    const sr=new SR();
+    sr.lang='ja-JP';
+    sr.continuous=false;
+    sr.interimResults=true;
+    sr.maxAlternatives=1;
+    sr.onresult=e=>{
+      let interim='',final='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        const t=e.results[i][0].transcript;
+        if(e.results[i].isFinal) final+=t; else interim+=t;
+      }
+      liveEl.style.background=''; liveEl.style.color=''; liveEl.style.fontStyle='';
+      if(interim) liveEl.textContent='🎤 '+interim;
+      if(final.trim()){
+        finalBuffer+=final; liveEl.textContent='✓ '+finalBuffer;
+        clearTimeout(silenceTimer);
+        silenceTimer=setTimeout(examFlushBuffer, 1200);
+      }
+    };
+    sr.onerror=e=>{
+      if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+        liveEl.style.background='var(--red-bg)'; liveEl.style.color='var(--red)'; liveEl.style.fontStyle='normal';
+        liveEl.textContent='⚠️ マイクの使用が許可されていません。ブラウザの設定を確認してください。';
+        return;
+      }
+    };
+    sr.onend=()=>{
+      if(isExamRecording&&!isExamPaused){
+        setTimeout(()=>{
+          if(!isExamRecording||isExamPaused) return;
+          examSpeechRecognition=buildExamSR();
+          try{examSpeechRecognition.start();}catch(e){}
+        }, 200);
+      }
+    };
+    return sr;
+  }
+
+  liveEl.textContent='🎤 音声認識中...';
+  examSpeechRecognition=buildExamSR();
   try{examSpeechRecognition.start();}catch(e){}
 }
+
 // ─── 口頭試問 Entries (Q/A) ───
 function renderExamEntries(){
   const empty=document.getElementById('examEmptyState');
@@ -1641,7 +1644,6 @@ function toggleExamAudio(){
   else{audio.pause();btn.textContent='▶ 再生';btn.className='btn';}
   audio.onended=()=>{btn.textContent='▶ 再生';btn.className='btn';};
 }
-// downloadExamAudio → exam_extra_js参照
 
 // ─── 口頭試問 発言者切替 ───
 function switchExamSpeaker(){
@@ -1748,8 +1750,6 @@ function applyExamCorrection(){
   renderExamEntries();hideExamCorrection();toast((from+1)+'番目以降のQ/Aを入れ替えました ✓');
 }
 
-// ─── 口頭試問 PDF ───
-
 // ─── カスタムオーディオプレーヤー ───
 function fmtTime(ms){
   const s=Math.floor(ms/1000), m=Math.floor(s/60);
@@ -1779,7 +1779,6 @@ function seekAudio(event, audioId){
   if(!audioEl.src) return;
   const bg=event.currentTarget;
   const rect=bg.getBoundingClientRect();
-  // タッチとマウス両対応
   const clientX = (event.touches && event.touches[0]) ? event.touches[0].clientX : event.clientX;
   const ratio=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
   const durMs = audioId==='audioEl' ? recDurationMs : examRecDurationMs;
@@ -1787,7 +1786,6 @@ function seekAudio(event, audioId){
 }
 
 // ─── RNネイティブ音声認識からの受信 ───
-// isFinalに依存せず、無音1200msで自動確定する方式
 window.onNativeSRResult = function(text, isFinal) {
   const liveEl = document.getElementById('liveText');
   if(!isRecording || isPaused) return;
@@ -1795,7 +1793,7 @@ window.onNativeSRResult = function(text, isFinal) {
   liveEl.classList.add('show');
   liveEl.textContent = (isFinal ? '✓ ' : '🎤 ') + text;
   if(!window._nativeSpeakerSnap) window._nativeSpeakerSnap = currentSpeaker;
-  window._nativeLatestText = text; // 常に最新テキストを保持
+  window._nativeLatestText = text;
   clearTimeout(window._nativeSilenceTimer);
   window._nativeSilenceTimer = setTimeout(()=>{
     const t = (window._nativeLatestText || '').trim();
