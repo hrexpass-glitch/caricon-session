@@ -249,7 +249,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     <div class="cslider-fill" id="timerFill"></div>
     <div class="cslider-thumb" id="timerThumb"></div>
   </div>
-  <input type="range" id="timerRange" min="0" max="30" value="15"
+  <input type="range" id="timerRange" min="1" max="30" value="15"
     oninput="onRangeChange(this.value)">
 </div>
     </div>
@@ -305,7 +305,6 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
   <div class="card" id="card-actions">
     <div class="sec-lbl">操作</div>
     <button class="action-btn" id="correctBtn" onclick="showCorrection()" disabled>⇄ ラベルずれを一括訂正</button>
-    <button class="action-btn" onclick="addRow()">＋ 行を手動追加</button>
   </div>
 
   <div class="corr-bar" id="corrBar">
@@ -316,16 +315,22 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
   </div>
 
   <div class="card" id="card-transcript">
-    <div class="transcript-hdr">
+    <div class="transcript-hdr" onclick="toggleTranscript()" style="cursor:pointer">
       <span class="transcript-title">逐語録</span>
-      <span class="count-badge" id="entryCounter">—</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="count-badge" id="entryCounter">—</span>
+        <span class="memo-toggle" id="transcriptToggle">▼</span>
+      </div>
     </div>
-    <div id="emptyState" class="empty-state">
-      <div class="empty-icon">🎙</div>
-      <div class="empty-text">録音すると逐語録が自動で入力されます<br>手動で行を追加することもできます</div>
-    </div>
-    <div id="tableWrap" style="display:none">
-      <div id="entryList"></div>
+    <div id="transcriptBody" class="memo-body open">
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon">🎙</div>
+        <div class="empty-text">録音すると逐語録が自動で入力されます</div>
+        <button class="btn" style="margin-top:12px;font-size:12px;padding:8px 16px" onclick="addRow()">＋ 最初の行を追加</button>
+      </div>
+      <div id="tableWrap" style="display:none">
+        <div id="entryList"></div>
+      </div>
     </div>
   </div>
 
@@ -383,7 +388,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <button class="btn" style="flex:1;font-weight:700;font-size:14px;line-height:1.4" onclick="setExamTimer(5)">⏱ 5分<br><span style="font-size:9px;font-weight:400;opacity:.7">国キャリ</span></button>
-      <button class="btn" style="flex:1;font-weight:700;font-size:14px;line-height:1.4" onclick="setExamTimer(10)">⏱ 10分<br><span style="font-size:9px;font-weight:400;opacity:.7">2級</span></button>
+      <button class="btn" style="flex:1;font-weight:700;font-size:14px;line-height:1.4" onclick="setExamTimer(10)">⏱ 10分<br><span style="font-size:9px;font-weight:400;opacity:.7">1級・2級</span></button>
     </div>
 
     <div class="field" style="margin-bottom:10px">
@@ -396,7 +401,7 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
     <div class="cslider-fill" id="examFill"></div>
     <div class="cslider-thumb" id="examThumb"></div>
   </div>
-  <input type="range" id="examRange" min="0" max="10" value="5"
+  <input type="range" id="examRange" min="1" max="10" value="5"
     oninput="onExamRangeChange(this.value)">
 </div>
     </div>
@@ -449,23 +454,28 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 
   <!-- 口頭試問 逐語録 -->
   <div class="card" id="card-exam-transcript">
-    <div class="transcript-hdr">
+    <div class="transcript-hdr" onclick="toggleExamTranscript()" style="cursor:pointer">
       <span class="transcript-title">口頭試問 記録</span>
-      <span class="count-badge" id="examEntryCounter">—</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="count-badge" id="examEntryCounter">—</span>
+        <span class="memo-toggle" id="examTranscriptToggle">▼</span>
+      </div>
     </div>
-    <div id="examEmptyState" class="empty-state">
-      <div class="empty-icon">💬</div>
-      <div class="empty-text">録音すると文字起こしが自動で入力されます<br>手動で行を追加することもできます</div>
-    </div>
-    <div id="examTableWrap" style="display:none">
-      <div id="examEntryList"></div>
+    <div id="examTranscriptBody" class="memo-body open">
+      <div id="examEmptyState" class="empty-state">
+        <div class="empty-icon">💬</div>
+        <div class="empty-text">録音すると文字起こしが自動で入力されます</div>
+        <button class="btn" style="margin-top:12px;font-size:12px;padding:8px 16px" onclick="addExamRow()">＋ 最初の行を追加</button>
+      </div>
+      <div id="examTableWrap" style="display:none">
+        <div id="examEntryList"></div>
+      </div>
     </div>
   </div>
 
   <div class="card" id="card-exam-actions">
     <div class="sec-lbl">口頭試問 操作</div>
     <button class="action-btn" id="examCorrectBtn" onclick="showExamCorrection()" disabled>⇄ Q/Aラベルずれを一括訂正</button>
-    <button class="action-btn" onclick="addExamRow()">＋ 行を手動追加</button>
   </div>
 
   <div class="corr-bar" id="examCorrBar">
@@ -494,6 +504,17 @@ select.corr-sel{background:var(--surface);border:1px solid var(--ac-bd);border-r
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="modal-ov" id="confirmModal">
+  <div class="modal-box">
+    <div class="modal-msg" id="confirmMsg" style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px"></div>
+    <div class="modal-msg" id="confirmSub" style="font-size:13px;margin-bottom:20px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button class="btn btn-full" id="confirmCancelBtn" onclick="confirmModal(false)" style="font-size:14px;padding:12px">キャンセル</button>
+      <button class="btn btn-full btn-danger" id="confirmOkBtn" onclick="confirmModal(true)" style="font-size:14px;padding:12px">削除</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const STORAGE_KEY = 'caricon_sessions_v3';
@@ -551,10 +572,10 @@ document.getElementById('sessionDate').value = new Date().toISOString().split('T
 // ・初期背景はCSSで50%固定済み
 // ・JS操作時のfillは (val-1)/28*100% のシンプル式（中央では完全一致）
 // min=0,max=28,value=14 → 14/28=50%が完全中央 → 表示はval+1=15分
-let sliderVal = 15; // min=1,max=30 → 15が中央(50%)
+let sliderVal = 15;     // 面談タイマー：デフォルト15分
+let examSliderVal = 5; // 口頭試問タイマー：デフォルト5分
 
 function updateRangeBg(el, val, maxVal) {
-  // val=0〜maxVal, 50%=中央, 100%=右端
   const pct = (val / maxVal * 100).toFixed(1);
   const isExam = el.id === 'examRange';
   const fill  = document.getElementById(isExam ? 'examFill'  : 'timerFill');
@@ -563,30 +584,27 @@ function updateRangeBg(el, val, maxVal) {
   if (thumb) thumb.style.left = pct + '%';
 }
 
-function setSliderVal(rawVal, triggerChange) {
-  rawVal = Math.max(0, Math.min(30, rawVal));
+function setSliderVal(rawVal) {
+  rawVal = Math.max(1, Math.min(30, rawVal)); // min=1に合わせてクランプ
   sliderVal = rawVal;
-  const mins = Math.max(1, rawVal);
   const el = document.getElementById('timerRange');
   if (el) { el.value = rawVal; updateRangeBg(el, rawVal, 30); }
-  document.getElementById('timerRangeVal').textContent = mins + '分';
-  if (triggerChange) {
-    TIMER_DURATION = mins * 60; timerSecondsLeft = TIMER_DURATION;
-    updateTimerUI();
-  }
+  document.getElementById('timerRangeVal').textContent = rawVal + '分';
+  TIMER_DURATION = rawVal * 60; timerSecondsLeft = TIMER_DURATION;
+  updateTimerUI();
 }
 
 function onRangeChange(val) {
   if (isTimerRunning) return;
-  setSliderVal(parseInt(val), true);
+  setSliderVal(Math.max(1, parseInt(val)));
 }
 
-// showPage後にgradientを再計算
+// showPage後にgradientを再計算（FIX: examSliderVal使用・max=9バグ修正）
 function refreshSliderBg() {
   const el = document.getElementById('timerRange');
   if (el) updateRangeBg(el, sliderVal, 30);
   const ex = document.getElementById('examRange');
-  if (ex) updateRangeBg(ex, parseInt(ex.value)||4, 9);
+  if (ex) updateRangeBg(ex, examSliderVal, 10);
 }
 
 renderSessionList();
@@ -626,7 +644,7 @@ function toggleBookmark(id) {
 function newSession() {
   currentSessionId = 'session_' + Date.now();
   entries = []; nextId = 1; audioBlob = null; allAudioChunks = [];
-  finalizeRec(); resetTimerFull();
+  finalizeRec(); _resetTimerCore();
   const today = new Date().toISOString().split('T')[0];
   ['sessionDate','sessionTitle','ccName','clName','sessionNote','memoText'].forEach(id => {
     document.getElementById(id).value = id==='sessionDate' ? today : id==='sessionTitle' ? today+'の面談' : '';
@@ -635,18 +653,28 @@ function newSession() {
   document.getElementById('audioPlayer').classList.remove('show');
   document.getElementById('examAudioPlayer').classList.remove('show');
   examEntries=[]; examNextId=1; examAudioBlob=null; examAllChunks=[];
-  examCurrentSpeaker='Q'; finalizeExamRec(); resetExamTimerFull();
+  examCurrentSpeaker='Q'; finalizeExamRec();
+  // FIX: _resetExamCoreはexamEntries=[]するので使わない。タイマーUIだけリセット
+  clearInterval(examTimerInterval); isExamTimerRunning=false; isExamPaused=false;
+  examSecondsLeft=EXAM_DURATION;
+  const _esb=document.getElementById('examStartBtn');
+  if(_esb){ _esb.textContent='▶ スタート'; _esb.className='btn btn-full btn-primary'; _esb.disabled=false; }
+  setExamStatus('','タイマーまたは録音を開始してください');
+  updateExamTimerUI();
   renderExamEntries();
-  setSliderVal(15, false);
+  setSliderVal(15);
   setExamSliderVal(5);
   // 確定後グレーアウトされたボタンを全て有効化
-  ['startBtn','resetBtn','examStartBtn'].forEach(function(id){
+  ['startBtn','resetBtn','examStartBtn','examSwitchBtn','switchBtn'].forEach(function(id){
     var el=document.getElementById(id); if(el){ el.disabled=false; }
   });
   document.getElementById('endBtn').disabled=true;
   document.getElementById('examEndBtn').disabled=true;
   var tr=document.getElementById('timerRange'); if(tr) tr.disabled=false;
   var er=document.getElementById('examRange'); if(er) er.disabled=false;
+  document.querySelectorAll('#card-exam .btn, #card-timer .btn').forEach(function(b){
+    if(b.id!=='endBtn' && b.id!=='examEndBtn') b.disabled=false;
+  });
   currentSpeaker = 'CC'; updateSpeakerBar(); renderEntries(); showPage('page-session');
 }
 
@@ -665,17 +693,46 @@ function openSession(id) {
   document.getElementById('session-hdr-title').textContent = s.title||s.date||'面談記録';
   document.getElementById('audioPlayer').classList.remove('show');
   document.getElementById('examAudioPlayer').classList.remove('show');
-  examEntries=[]; examNextId=1; examAudioBlob=null; examAllChunks=[];
-  examCurrentSpeaker='Q'; finalizeExamRec(); resetExamTimerFull();
+  examEntries = (s.examEntries||[]).map(e=>({...e}));
+  examNextId = examEntries.length ? Math.max(...examEntries.map(e=>e.id))+1 : 1;
+  examAudioBlob=null; examAllChunks=[];
+  examCurrentSpeaker='Q'; finalizeExamRec();
+  // FIX: _resetExamCoreはexamEntries=[]するので使わない。タイマーUIだけリセット
+  clearInterval(examTimerInterval); isExamTimerRunning=false; isExamPaused=false;
+  examSecondsLeft=EXAM_DURATION;
+  const _esb=document.getElementById('examStartBtn');
+  if(_esb){ _esb.textContent='▶ スタート'; _esb.className='btn btn-full btn-primary'; _esb.disabled=false; }
+  setExamStatus('','タイマーまたは録音を開始してください');
+  updateExamTimerUI();
   renderExamEntries();
-  setSliderVal(15, false); resetTimerFull(); renderEntries();
+  setSliderVal(15); setExamSliderVal(5);
+  // FIX: _resetTimerCoreはentries=[]するので使わない。タイマーUIだけリセット
+  clearInterval(timerInterval); isTimerRunning = false; isPaused = false;
+  timerSecondsLeft = TIMER_DURATION;
+  const _sb = document.getElementById('startBtn');
+  if(_sb){ _sb.textContent='▶ スタート'; _sb.className='btn btn-full btn-primary'; _sb.style.cssText='margin-bottom:8px;font-size:15px;padding:14px'; _sb.disabled=false; }
+  setStatus('', 'タイマーまたは録音を開始してください');
+  updateTimerUI();
+  renderEntries();
   if (entries.length) enableBtns();
+  if (examEntries.length) document.getElementById('examCorrectBtn').disabled=false;
+  // 前セッションのdisabled状態を確実にリセット
+  ['startBtn','resetBtn','examStartBtn','examSwitchBtn','switchBtn'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.disabled=false;
+  });
+  document.getElementById('endBtn').disabled=true;
+  document.getElementById('examEndBtn').disabled=true;
+  var tr=document.getElementById('timerRange'); if(tr) tr.disabled=false;
+  var er=document.getElementById('examRange'); if(er) er.disabled=false;
+  document.querySelectorAll('#card-exam .btn, #card-timer .btn').forEach(function(b){
+    if(b.id!=='endBtn' && b.id!=='examEndBtn') b.disabled=false;
+  });
   showPage('page-session');
 }
 
 function deleteSession(id) {
-  if (!confirm('この面談記録を削除しますか？')) return;
-  sessions = sessions.filter(s => s.id!==id); saveSessions(sessions); renderSessionList(); toast('削除しました');
+  showConfirm('この面談記録を削除しますか？', '', '削除', (ok)=>{ if(!ok) return;
+  sessions = sessions.filter(s => s.id!==id); saveSessions(sessions); renderSessionList(); toast('削除しました'); });
 }
 
 function saveSession() {
@@ -689,6 +746,7 @@ function saveSession() {
     note:document.getElementById('sessionNote').value,
     memo:document.getElementById('memoText').value,
     entries:entries.map(e=>({...e})),
+    examEntries:examEntries.map(e=>({...e})),
     bookmarked:existing?existing.bookmarked:false, savedAt:Date.now()
   };
   const idx = sessions.findIndex(s => s.id===currentSessionId);
@@ -700,7 +758,9 @@ function saveSession() {
 
 function backToList() {
   finalizeRec();
+  finalizeExamRec();
   if (isTimerRunning) { clearInterval(timerInterval); isTimerRunning = false; }
+  if (isExamTimerRunning) { clearInterval(examTimerInterval); isExamTimerRunning = false; }
   showPage('page-list'); renderSessionList();
 }
 
@@ -709,11 +769,12 @@ function showPage(id) {
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
   if (id === 'page-session') {
+    // FIX: ページ表示後にスライダーを再描画（ex.valueではなく保存済み変数を使う）
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         updateRangeBg(document.getElementById('timerRange'), sliderVal, 30);
         const ex=document.getElementById('examRange');
-        if(ex) updateRangeBg(ex, parseInt(ex.value||'5'), 10);
+        if(ex) updateRangeBg(ex, examSliderVal, 10);
       });
     });
   }
@@ -724,9 +785,8 @@ function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).
 
 function setTimer(min) {
   if (isTimerRunning) return;
-  TIMER_DURATION = min*60; timerSecondsLeft = TIMER_DURATION;
-  setSliderVal(Math.min(Math.max(min, 0), 30), false);
-  updateTimerUI(); toast(min+'分にセットしました');
+  setSliderVal(Math.min(Math.max(min, 1), 30)); // setSliderVal内でTIMER_DURATIONも更新される
+  toast(min+'分にセットしました');
 }
 
 
@@ -755,14 +815,31 @@ function startCountdown() {
   updateTimerUI();
 }
 
-function resetTimerFull() {
+function _resetTimerCore() {
   clearInterval(timerInterval); isTimerRunning = false; isPaused = false;
-  timerSecondsLeft = TIMER_DURATION;
+  finalizeRec();
+  allAudioChunks = []; audioBlob = null;
+  entries = []; nextId = 1;
+  window._nativeLatestText = ''; window._nativeSpeakerSnap = null;
+  clearTimeout(window._nativeSilenceTimer); window._nativeSilenceTimer = null;
   const btn = document.getElementById('startBtn');
   btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
-  document.getElementById('endBtn').disabled = true;
   btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
-  updateTimerUI();
+  btn.disabled = false;
+  document.getElementById('endBtn').disabled = true;
+  document.getElementById('resetBtn').disabled = false;
+  document.getElementById('timerRange').disabled = false;
+  document.getElementById('audioPlayer').classList.remove('show');
+  document.getElementById('liveText').classList.remove('show');
+  document.getElementById('liveText').textContent = '';
+  document.querySelectorAll('#card-timer .btn').forEach(b => { if(b.id !== 'endBtn') b.disabled = false; });
+  currentSpeaker = 'CC'; updateSpeakerBar();
+  setSliderVal(15);
+  setStatus('', 'タイマーまたは録音を開始してください');
+  renderEntries();
+}
+function resetTimerFull() {
+  showConfirm('面談をリセットしますか？', '逐語録・録音・タイマーがすべて消えます', 'リセット', (ok)=>{ if(!ok) return; _resetTimerCore(); toast('面談をリセットしました'); });
 }
 
 function onTimerEnd() {
@@ -789,6 +866,7 @@ function beep() {
 
 // ─── Recording（一時停止→再開でも音声が途切れない）───
 async function startRec() {
+  let hasAudio = false;
   try {
     audioStream = await navigator.mediaDevices.getUserMedia({audio:true});
     allAudioChunks = [];
@@ -796,19 +874,21 @@ async function startRec() {
     mediaRecorder.ondataavailable = e => { if(e.data.size>0) allAudioChunks.push(e.data); };
     mediaRecorder.start(500);
     recDurationMs=0; recStartedAt=Date.now();
-    isRecording=true; isPaused=false;
-    startSpeechRecognition();
-    return true;
-  } catch(e) { toast('マイクへのアクセスが許可されていません'); return false; }
+    hasAudio = true;
+  } catch(e) {
+    // 録音は失敗してもSR（逐語録）は続行する
+  }
+  isRecording=true; isPaused=false;
+  startSpeechRecognition();
+  return hasAudio;
 }
 
 function pauseRec() {
   if(recStartedAt){ recDurationMs += Date.now()-recStartedAt; recStartedAt=null; }
   if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.pause();
   isPaused=true;
-  if(window._useNativeSpeech){
-    window._speechCallback=null;
-    window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({type:'stopSpeech'}));
+  if(window.ReactNativeWebView){
+    window.ReactNativeWebView.postMessage(JSON.stringify({type:'stopSR'}));
   } else {
     if(speechRecognition){try{speechRecognition.stop();}catch(e){} speechRecognition=null;}
   }
@@ -818,7 +898,15 @@ function pauseRec() {
 function resumeRec() {
   recStartedAt=Date.now();
   if(mediaRecorder && mediaRecorder.state==='paused') mediaRecorder.resume();
-  isPaused=false; startSpeechRecognition();
+  isPaused=false;
+  // 再開時にバッファリセット（一時停止中の残留データを除去）
+  window._nativeLatestText = '';
+  window._nativeSpeakerSnap = null;
+  clearTimeout(window._nativeSilenceTimer);
+  window._nativeSilenceTimer = null;
+  const liveEl = document.getElementById('liveText');
+  liveEl.textContent = '';
+  startSpeechRecognition();
 }
 
 
@@ -831,10 +919,9 @@ function endSession() {
   // タイマー・録音操作をグレーアウト（再生・ダウンロードは除く）
   btn.disabled = true;
   document.getElementById('endBtn').disabled = true;
-  document.getElementById('resetBtn').disabled = true;
   document.getElementById('timerRange').disabled = true;
   // プリセットボタンもグレーアウト
-  document.querySelectorAll('#card-timer .btn:not(#audioPlayBtn):not([onclick*="downloadAudio"]):not([onclick*="toggleAudio"])').forEach(b => { b.disabled = true; });
+  document.querySelectorAll('#card-timer .btn:not(#audioPlayBtn):not([onclick*="downloadAudio"]):not([onclick*="toggleAudio"]):not([onclick*="setTimer"])').forEach(b => { b.disabled = true; });
   finalizeRec();
   setStatus('done','録音・逐語録 確定済み');
   toast('録音と逐語録を確定しました');
@@ -872,6 +959,10 @@ function finalizeRec() {
   const doFinalize = () => {
     if(audioStream){audioStream.getTracks().forEach(t=>t.stop()); audioStream=null;}
     isRecording=false; isPaused=false;
+    window._nativeLatestText = '';
+    window._nativeSpeakerSnap = null;
+    clearTimeout(window._nativeSilenceTimer);
+    window._nativeSilenceTimer = null;
     if(window.ReactNativeWebView){
       window.ReactNativeWebView.postMessage(JSON.stringify({type:'stopSR'}));
     }
@@ -908,6 +999,7 @@ async function startBoth() {
   const btn = document.getElementById('startBtn');
   btn.textContent='⏸ 一時停止'; btn.className='btn btn-full btn-stop';
   btn.style.cssText='margin-bottom:8px;font-size:15px;padding:14px';
+  document.getElementById('endBtn').disabled = false; // FIX: 録音開始と同時に終了ボタンを有効化
   setStatus('rec', ok?'録音中 + タイマー動作中':'タイマー動作中（マイク未使用）');
 }
 
@@ -942,13 +1034,33 @@ function updateSpeakerBar() {
   }
 }
 function switchSpeaker() {
+  // 切替前に蓄積バッファを強制フラッシュ
   if(mainFlushBuffer) mainFlushBuffer();
+  // RN環境のネイティブバッファもリセット
+  if(window._nativeLatestText && window._nativeLatestText.trim()){
+    const el = TIMER_DURATION - timerSecondsLeft;
+    const mm = Math.floor(el/60).toString().padStart(2,'0'), ss = (el%60).toString().padStart(2,'0');
+    entries.push({id:nextId++,label:window._nativeSpeakerSnap||currentSpeaker,text:window._nativeLatestText.trim(),notes:'',advice:'',time:mm+':'+ss});
+    renderEntries(); enableBtns();
+  }
+  window._nativeLatestText = '';
+  window._nativeSpeakerSnap = null;
+  clearTimeout(window._nativeSilenceTimer);
+  window._nativeSilenceTimer = null;
+  document.getElementById('liveText').textContent = '';
   currentSpeaker=currentSpeaker==='CC'?'CL':'CC';
   updateSpeakerBar(); toast(currentSpeaker+' に切り替えました');
 }
 
 // ─── Speech ───
 function startSpeechRecognition() {
+  // RN環境ではネイティブSRを使用
+  if(window.ReactNativeWebView){
+    document.getElementById('liveText').classList.add('show');
+    document.getElementById('liveText').textContent='🎤 音声認識中...';
+    window.ReactNativeWebView.postMessage(JSON.stringify({type:'startSR', lang:'ja-JP'}));
+    return;
+  }
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR) return;
   speechRecognition=new SR();
@@ -973,7 +1085,7 @@ function startSpeechRecognition() {
     if(final.trim()){
       finalBuffer+=final; liveEl.textContent='✓ '+finalBuffer;
       clearTimeout(silenceTimer);
-      silenceTimer=setTimeout(mainFlushBuffer, 1800);
+      silenceTimer=setTimeout(mainFlushBuffer, 1200);
     }
   };
   speechRecognition.onerror=()=>{};
@@ -993,6 +1105,7 @@ function renderEntries() {
         <button class="label-pill ${e.label}" onclick="toggleLabel(${e.id})">${e.label}</button>
         ${e.time?`<span style="font-size:10px;color:var(--dim);margin-left:2px">${e.time}</span>`:''}
         <button class="del-btn" onclick="delEntry(${e.id})">✕</button>
+        <button class="del-btn" style="color:var(--ac);font-size:13px;" onclick="insertRowAfter(${e.id})">＋</button>
       </div>
       <textarea class="entry-ta" rows="3" oninput="updateField(${e.id},'text',this.value)" placeholder="逐語録">${esc(e.text)}</textarea>
       <div class="entry-div"></div>
@@ -1009,9 +1122,21 @@ function renderEntries() {
 
 function esc(t){return(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function addRow(){entries.push({id:nextId++,label:currentSpeaker||'CC',text:'',notes:'',advice:'',time:''});renderEntries();enableBtns();}
+function insertRowAfter(id){
+  const idx=entries.findIndex(e=>e.id===id);
+  if(idx<0) return;
+  const newEntry={id:nextId++,label:entries[idx].label,text:'',notes:'',advice:'',time:''};
+  entries.splice(idx+1,0,newEntry);
+  renderEntries();enableBtns();
+  // 挿入した行にフォーカス
+  setTimeout(()=>{
+    const ta=document.querySelector('#ec-'+newEntry.id+' .entry-ta');
+    if(ta) ta.focus();
+  },50);
+}
 function toggleLabel(id){const e=entries.find(e=>e.id===id);if(e){e.label=e.label==='CC'?'CL':'CC';renderEntries();}}
 function updateField(id,field,val){const e=entries.find(e=>e.id===id);if(e)e[field]=val;}
-function delEntry(id){if(!confirm('この行を削除しますか？'))return;entries=entries.filter(e=>e.id!==id);renderEntries();}
+function delEntry(id){showConfirm('この行を削除しますか？','','削除',(ok)=>{if(!ok)return;entries=entries.filter(e=>e.id!==id);renderEntries();});}
 function enableBtns(){document.getElementById('correctBtn').disabled=false;}
 
 // ─── Correction ───
@@ -1026,6 +1151,8 @@ function applyCorrection(){
 
 // ─── Memo ───
 function toggleMemo(){document.getElementById('memoBody').classList.toggle('open');document.getElementById('memoToggle').classList.toggle('open');}
+function toggleTranscript(){document.getElementById('transcriptBody').classList.toggle('open');document.getElementById('transcriptToggle').classList.toggle('open');}
+function toggleExamTranscript(){document.getElementById('examTranscriptBody').classList.toggle('open');document.getElementById('examTranscriptToggle').classList.toggle('open');}
 
 // ─── Status ───
 function setStatus(type,text){
@@ -1034,55 +1161,127 @@ function setStatus(type,text){
 }
 
 // ─── PDF ───
-function downloadPdf(){
-  saveSession(); // PDF出力前に自動保存
-  const ccN=document.getElementById('ccName').value||'CC', clN=document.getElementById('clName').value||'CL';
-  // 面談テーブル
-  document.getElementById('pt-body').innerHTML=entries.map((e,i)=>{
-    const lc=e.label==='CC'?'#2d7a5e':'#5a4a8e', name=e.label==='CC'?ccN:clN;
-    return '<tr style="page-break-inside:avoid">'
-      +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;color:#888;font-size:10px">'+String(i+1).padStart(2,'0')+'</td>'
-      +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center"><span style="display:inline-block;background:'+lc+';color:#fff;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:3px">'+e.label+'</span><br><span style="font-size:9px;color:#666">'+name+'</span></td>'
-      +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;font-size:10px;color:#888">'+(e.time||'—')+'</td>'
-      +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6">'+(e.text||'').replace(/</g,'&lt;')+'</td>'
-      +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#444">'+(e.notes||'').replace(/</g,'&lt;')+'</td>'
-      +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#8a5510">'+(e.advice||'').replace(/</g,'&lt;')+'</td>'
-      +'</tr>';
-  }).join('');
-  // 口頭試問テーブル（データがある場合のみ表示）
-  const examPt=document.getElementById('exam-print-table');
-  if(examEntries.length>0){
-    document.getElementById('exam-pt-body').innerHTML=examEntries.map((e,i)=>{
-      const isQ=e.label==='Q', lc=isQ?'#2d7a5e':'#5a4a8e', name=isQ?'Q 試験官':'A 自分';
-      return '<tr style="page-break-inside:avoid">'
-        +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;color:#888;font-size:10px">'+String(i+1).padStart(2,'0')+'</td>'
-        +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center"><span style="display:inline-block;background:'+lc+';color:#fff;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:3px">'+e.label+'</span><br><span style="font-size:9px;color:#666">'+name+'</span></td>'
-        +'<td style="border:1px solid #ccc;padding:4px 5px;text-align:center;font-size:10px;color:#888">'+(e.time||'—')+'</td>'
-        +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6">'+(e.text||'').replace(/</g,'&lt;')+'</td>'
-        +'<td style="border:1px solid #ccc;padding:4px 6px;line-height:1.6;color:#444">'+(e.notes||'').replace(/</g,'&lt;')+'</td>'
+function _esc(t){return(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function _buildPdfHtml(){
+  const ccN=document.getElementById('ccName').value||'CC';
+  const clN=document.getElementById('clName').value||'CL';
+  const titleVal=document.getElementById('sessionTitle').value||'';
+  const dateVal=document.getElementById('sessionDate').value||'';
+  const noteVal=document.getElementById('sessionNote').value||'';
+  const memoVal=document.getElementById('memoText').value||'';
+
+  const TD='border:1px solid #ccc;padding:4px 5px;vertical-align:top;font-size:9px;color:#222;';
+  const TH='border:1px solid #ccc;padding:4px 5px;background:#f2f2f0;font-size:8px;color:#333;text-align:center;';
+
+  // ヘッダー情報
+  let html='<div style="margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #333;">'
+    +'<div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#111;">'+_esc(titleVal)+'</div>'
+    +'<table style="border-collapse:collapse;font-size:9px;width:100%;"><tr>'
+    +'<td style="padding:2px 6px 2px 0;color:#555;white-space:nowrap;">実施日：</td>'
+    +'<td style="padding:2px 12px 2px 0;color:#111;">'+_esc(dateVal)+'</td>'
+    +'<td style="padding:2px 6px 2px 0;color:#555;white-space:nowrap;">CC：</td>'
+    +'<td style="padding:2px 12px 2px 0;color:#111;">'+_esc(ccN)+'</td>'
+    +'<td style="padding:2px 6px 2px 0;color:#555;white-space:nowrap;">CL：</td>'
+    +'<td style="padding:2px 0;color:#111;">'+_esc(clN)+'</td>'
+    +'</tr></table>'
+    +(noteVal?'<div style="font-size:9px;color:#555;margin-top:4px;">メモ：'+_esc(noteVal)+'</div>':'')
+    +'</div>';
+
+  // 面談逐語録テーブル
+  if(entries.length>0){
+    html+='<div style="font-size:11px;font-weight:700;margin:8px 0 4px;border-bottom:1px solid #333;padding-bottom:2px;color:#111;">面談逐語録</div>'
+      +'<table style="width:100%;border-collapse:collapse;table-layout:fixed;word-break:break-all;">'
+      +'<thead><tr>'
+      +'<th style="'+TH+'width:24px;">番号</th>'
+      +'<th style="'+TH+'width:40px;">話者</th>'
+      +'<th style="'+TH+'width:36px;">時刻</th>'
+      +'<th style="'+TH+'">逐語録</th>'
+      +'<th style="'+TH+'width:24%;">気づき・改善案</th>'
+      +'<th style="'+TH+'width:18%;">アドバイス</th>'
+      +'</tr></thead><tbody>';
+    entries.forEach(function(e,i){
+      const lc=e.label==='CC'?'#2d7a5e':'#5a4a8e';
+      const name=e.label==='CC'?ccN:clN;
+      html+='<tr style="page-break-inside:avoid;">'
+        +'<td style="'+TD+'text-align:center;">'+String(i+1).padStart(2,'0')+'</td>'
+        +'<td style="'+TD+'text-align:center;">'
+          +'<span style="display:inline-block;background:'+lc+';color:#fff;font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;">'+e.label+'</span>'
+          +'<br><span style="font-size:8px;color:#555;">'+_esc(name)+'</span>'
+        +'</td>'
+        +'<td style="'+TD+'text-align:center;color:#888;">'+(e.time||'—')+'</td>'
+        +'<td style="'+TD+'line-height:1.6;">'+_esc(e.text)+'</td>'
+        +'<td style="'+TD+'line-height:1.6;color:#444;">'+_esc(e.notes)+'</td>'
+        +'<td style="'+TD+'line-height:1.6;color:#7a4a00;">'+_esc(e.advice)+'</td>'
         +'</tr>';
-    }).join('');
-    examPt.style.display='block';
+    });
+    html+='</tbody></table>';
   }
-  document.getElementById('print-table').style.display='block';
-  document.getElementById('memoBody').classList.add('open'); document.getElementById('memoToggle').classList.add('open');
-  window.onafterprint=()=>{
-    document.getElementById('print-table').style.display='none';
-    examPt.style.display='none';
-  };
+
+  // 口頭試問テーブル
+  if(examEntries.length>0){
+    html+='<div style="font-size:11px;font-weight:700;margin:16px 0 4px;border-bottom:1px solid #333;padding-bottom:2px;color:#111;">口頭試問記録</div>'
+      +'<table style="width:100%;border-collapse:collapse;table-layout:fixed;word-break:break-all;">'
+      +'<thead><tr>'
+      +'<th style="'+TH+'width:24px;">番号</th>'
+      +'<th style="'+TH+'width:44px;">発言者</th>'
+      +'<th style="'+TH+'width:36px;">時刻</th>'
+      +'<th style="'+TH+'">内容</th>'
+      +'<th style="'+TH+'width:22%;">メモ・気づき</th>'
+      +'<th style="'+TH+'width:20%;">アドバイス</th>'
+      +'</tr></thead><tbody>';
+    examEntries.forEach(function(e,i){
+      const isQ=e.label==='Q';
+      const lc=isQ?'#2d7a5e':'#5a4a8e';
+      const name=isQ?'Q 試験官':'A 自分';
+      html+='<tr style="page-break-inside:avoid;">'
+        +'<td style="'+TD+'text-align:center;">'+String(i+1).padStart(2,'0')+'</td>'
+        +'<td style="'+TD+'text-align:center;">'
+          +'<span style="display:inline-block;background:'+lc+';color:#fff;font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;">'+e.label+'</span>'
+          +'<br><span style="font-size:8px;color:#555;">'+_esc(name)+'</span>'
+        +'</td>'
+        +'<td style="'+TD+'text-align:center;color:#888;">'+(e.time||'—')+'</td>'
+        +'<td style="'+TD+'line-height:1.6;">'+_esc(e.text)+'</td>'
+        +'<td style="'+TD+'line-height:1.6;color:#444;">'+_esc(e.notes)+'</td>'
+        +'<td style="'+TD+'line-height:1.6;color:#7a4a00;">'+_esc(e.advice||'')+'</td>'
+        +'</tr>';
+    });
+    html+='</tbody></table>';
+  }
+
+  // 総合メモ
+  if(memoVal){
+    html+='<div style="margin-top:16px;padding-top:8px;border-top:1px solid #ccc;">'
+      +'<div style="font-size:10px;font-weight:700;margin-bottom:4px;color:#111;">総合メモ・フィードバック</div>'
+      +'<div style="font-size:9px;color:#333;white-space:pre-wrap;line-height:1.7;">'+_esc(memoVal)+'</div>'
+      +'</div>';
+  }
+
+  return html;
+}
+
+function downloadPdf(){
+  saveSession();
   if(window.ReactNativeWebView){
-    // React Native WebView内：expo-printで出力
-    document.getElementById('memoBody').classList.add('open');
-    const memoVal = document.getElementById('memoText').value;
-    const memoHtml = memoVal ? '<div style="margin-top:12px;font-size:10px;border-top:1px solid #ccc;padding-top:8px"><strong>総合メモ・フィードバック</strong><p style="white-space:pre-wrap;margin-top:4px">' + memoVal.replace(/</g,'&lt;') + '</p></div>' : '';
-    const html = document.getElementById('print-table').outerHTML
-      + (examEntries.length>0 ? document.getElementById('exam-print-table').outerHTML : '')
-      + memoHtml;
+    const html = _buildPdfHtml();
     window.ReactNativeWebView.postMessage(JSON.stringify({type:'print', html:html}));
-    document.getElementById('print-table').style.display='none';
-    if(examEntries.length>0) document.getElementById('exam-print-table').style.display='none';
   } else {
-    requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
+    // ブラウザ版：Android版と完全に同じ_buildPdfHtml()を使って印刷
+    const html = _buildPdfHtml();
+    const CSS = `
+      *{box-sizing:border-box;margin:0;padding:0;}
+      body{font-family:'Hiragino Sans','Noto Sans JP','Yu Gothic',sans-serif;font-size:9px;color:#111;background:#fff;margin:8px;padding:0;}
+      table{width:100%;border-collapse:collapse;table-layout:fixed;word-break:break-all;}
+      td,th{vertical-align:top;overflow-wrap:break-word;font-size:9px;color:#222;}
+    `;
+    const fullHtml = '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><style>'+CSS+'</style></head><body>'+html+'</body></html>';
+    const w = window.open('','_blank');
+    if(w){
+      w.document.write(fullHtml);
+      w.document.close();
+      w.focus();
+      setTimeout(()=>w.print(), 400);
+    }
   }
 }
 
@@ -1100,30 +1299,27 @@ function fmtExam(s){return Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60
 
 function setExamTimer(min){
   if(isExamTimerRunning) return;
-  EXAM_DURATION=min*60; examSecondsLeft=EXAM_DURATION;
-  const el=document.getElementById('examRange');
-  const v=Math.min(Math.max(min,0),10);
-  if(el){ el.value=v; updateRangeBg(el, v, 10); document.getElementById('examRangeVal').textContent=min+'分'; }
-  updateExamTimerUI(); toast(min+'分にセットしました');
+  setExamSliderVal(Math.min(Math.max(min, 1), 10)); // FIX: setExamSliderVal経由でexamSliderValも更新
+  toast(min+'分にセットしました');
 }
 
 function setExamSliderVal(v){
-  v=Math.max(0,Math.min(v,10));
-  const mins=Math.max(1,v);
-  EXAM_DURATION=mins*60; examSecondsLeft=EXAM_DURATION;
-  document.getElementById('examRangeVal').textContent=mins+'分';
-  const ex=document.getElementById('examRange');
-  if(ex){ ex.value=v; updateRangeBg(ex, v, 10); }
+  v = Math.max(1, Math.min(10, v)); // min=1に合わせてクランプ
+  examSliderVal = v;
+  EXAM_DURATION = v * 60; examSecondsLeft = EXAM_DURATION;
+  document.getElementById('examRangeVal').textContent = v + '分';
+  const ex = document.getElementById('examRange');
+  if(ex){ ex.value = v; updateRangeBg(ex, v, 10); }
   updateExamTimerUI();
 }
 
 function onExamRangeChange(val){
   if(isExamTimerRunning) return;
-  const v=parseInt(val);
-  const mins=Math.max(1,v);
-  EXAM_DURATION=mins*60; examSecondsLeft=EXAM_DURATION;
-  document.getElementById('examRangeVal').textContent=mins+'分';
-  const ex=document.getElementById('examRange');
+  const v = Math.max(1, Math.min(10, parseInt(val)));
+  examSliderVal = v;
+  EXAM_DURATION = v * 60; examSecondsLeft = EXAM_DURATION;
+  document.getElementById('examRangeVal').textContent = v + '分';
+  const ex = document.getElementById('examRange');
   if(ex) updateRangeBg(ex, v, 10);
   updateExamTimerUI();
 }
@@ -1161,13 +1357,29 @@ function onExamTimerEnd(){
   toast('口頭試問終了 — 録音・記録を自動確定しました ✓');
 }
 
-function resetExamTimerFull(){
+function _resetExamCore(){
   clearInterval(examTimerInterval); isExamTimerRunning=false; isExamPaused=false;
-  examSecondsLeft=EXAM_DURATION;
+  finalizeExamRec();
+  examAllChunks=[]; examAudioBlob=null;
+  examEntries=[]; examNextId=1;
+  window._nativeExamLatestText=''; window._nativeExamSpeakerSnap=null;
+  clearTimeout(window._nativeExamTimer); window._nativeExamTimer=null;
   const btn=document.getElementById('examStartBtn');
   btn.textContent='▶ スタート'; btn.className='btn btn-full btn-primary';
-  document.getElementById('examEndBtn').disabled = true;
-  updateExamTimerUI(); setExamStatus('','タイマーまたは録音を開始してください');
+  btn.disabled=false;
+  document.getElementById('examEndBtn').disabled=true;
+  document.getElementById('examRange').disabled=false;
+  document.getElementById('examAudioPlayer').classList.remove('show');
+  document.getElementById('examLiveText').classList.remove('show');
+  document.getElementById('examLiveText').textContent='';
+  document.querySelectorAll('#card-exam .btn').forEach(b => { if(b.id !== 'examEndBtn') b.disabled=false; });
+  examCurrentSpeaker='Q'; updateExamSpeakerBar();
+  setExamSliderVal(5);
+  setExamStatus('','タイマーまたは録音を開始してください');
+  renderExamEntries();
+}
+function resetExamTimerFull(){
+  showConfirm('口頭試問をリセットしますか？', '記録・録音・タイマーがすべて消えます', 'リセット', (ok)=>{ if(!ok) return; _resetExamCore(); toast('口頭試問をリセットしました'); });
 }
 
 function toggleExamStart(){
@@ -1206,6 +1418,7 @@ function resumeExamBoth(){
 
 // ─── 口頭試問 Recording ───
 async function startExamRec(){
+  let hasAudio = false;
   try{
     examAudioStream=await navigator.mediaDevices.getUserMedia({audio:true});
     examAllChunks=[];
@@ -1213,29 +1426,52 @@ async function startExamRec(){
     examMediaRecorder.ondataavailable=e=>{ if(e.data.size>0) examAllChunks.push(e.data); };
     examMediaRecorder.start(500);
     examRecDurationMs=0; examRecStartedAt=Date.now();
-    isExamRecording=true; isExamPaused=false;
-    startExamSpeechRecognition(); return true;
-  }catch(e){ toast('マイクへのアクセスが許可されていません'); return false; }
+    hasAudio = true;
+  }catch(e){
+    // 録音は失敗してもSR（逐語録）は続行する
+  }
+  isExamRecording=true; isExamPaused=false;
+  startExamSpeechRecognition(); return hasAudio;
 }
 
 function pauseExamRec(){
   if(examRecStartedAt){ examRecDurationMs += Date.now()-examRecStartedAt; examRecStartedAt=null; }
   if(examMediaRecorder && examMediaRecorder.state==='recording') examMediaRecorder.pause();
   isExamPaused=true;
-  if(examSpeechRecognition){try{examSpeechRecognition.stop();}catch(e){} examSpeechRecognition=null;}
+  if(window.ReactNativeWebView){
+    window.ReactNativeWebView.postMessage(JSON.stringify({type:'stopSR'}));
+  } else {
+    if(examSpeechRecognition){try{examSpeechRecognition.stop();}catch(e){} examSpeechRecognition=null;}
+  }
   document.getElementById('examLiveText').classList.remove('show');
 }
 
 function resumeExamRec(){
   examRecStartedAt=Date.now();
   if(examMediaRecorder && examMediaRecorder.state==='paused') examMediaRecorder.resume();
-  isExamPaused=false; startExamSpeechRecognition();
+  isExamPaused=false;
+  window._nativeExamLatestText = '';
+  window._nativeExamSpeakerSnap = null;
+  
+  clearTimeout(window._nativeExamTimer);
+  window._nativeExamTimer = null;
+  const liveEl = document.getElementById('examLiveText');
+  liveEl.textContent = '';
+  startExamSpeechRecognition();
 }
 
 function finalizeExamRec(){
   const doFinalize=()=>{
     if(examAudioStream){examAudioStream.getTracks().forEach(t=>t.stop()); examAudioStream=null;}
     isExamRecording=false; isExamPaused=false;
+    window._nativeExamLatestText = '';
+    window._nativeExamSpeakerSnap = null;
+    
+    clearTimeout(window._nativeExamTimer);
+    window._nativeExamTimer = null;
+    if(window.ReactNativeWebView){
+      window.ReactNativeWebView.postMessage(JSON.stringify({type:'stopSR'}));
+    }
     if(examSpeechRecognition){try{examSpeechRecognition.stop();}catch(e){} examSpeechRecognition=null;}
     document.getElementById('examLiveText').classList.remove('show');
     if(examAllChunks.length>0){
@@ -1254,6 +1490,12 @@ function finalizeExamRec(){
 
 // ─── 口頭試問 Speech Recognition ───
 function startExamSpeechRecognition(){
+  if(window.ReactNativeWebView){
+    document.getElementById('examLiveText').classList.add('show');
+    document.getElementById('examLiveText').textContent='🎤 音声認識中...';
+    window.ReactNativeWebView.postMessage(JSON.stringify({type:'startExamSR', lang:'ja-JP'}));
+    return;
+  }
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR) return;
   examSpeechRecognition=new SR();
@@ -1278,7 +1520,7 @@ function startExamSpeechRecognition(){
     if(final.trim()){
       finalBuffer+=final; liveEl.textContent='✓ '+finalBuffer;
       clearTimeout(silenceTimer);
-      silenceTimer=setTimeout(examFlushBuffer, 1800);
+      silenceTimer=setTimeout(examFlushBuffer, 1200);
     }
   };
   examSpeechRecognition.onerror=()=>{};
@@ -1302,19 +1544,34 @@ function renderExamEntries(){
         <button class="label-pill ${e.label==='Q'?'CC':'CL'}" style="letter-spacing:.05em" onclick="toggleExamLabel(${e.id})">${e.label==='Q'?'Q 試験官':'A 自分'}</button>
         ${e.time?`<span style="font-size:10px;color:var(--dim);margin-left:2px">${e.time}</span>`:''}
         <button class="del-btn" onclick="delExamEntry(${e.id})">✕</button>
+        <button class="del-btn" style="color:var(--ac);font-size:13px;" onclick="insertExamRowAfter(${e.id})">＋</button>
       </div>
       <textarea class="entry-ta" rows="3" oninput="updateExamField(${e.id},'text',this.value)" placeholder="逐語録">${esc(e.text)}</textarea>
       <div class="entry-div"></div>
       <div class="entry-sublbl">メモ・気づき</div>
-      <textarea class="entry-ta sub" rows="2" oninput="updateExamField(${e.id},'notes',this.value)" placeholder="メモ">${esc(e.notes)}</textarea>
+      <textarea class="entry-ta sub" rows="2" oninput="updateExamField(${e.id},'notes',this.value)" placeholder="メモ・気づき">${esc(e.notes)}</textarea>
+      <div class="entry-div"></div>
+      <div class="entry-sublbl">アドバイス</div>
+      <textarea class="entry-ta adv" rows="2" oninput="updateExamField(${e.id},'advice',this.value)" placeholder="アドバイス">${esc(e.advice||'')}</textarea>
     </div>
   `).join('');
 }
 
-function addExamRow(){examEntries.push({id:examNextId++,label:examCurrentSpeaker||'Q',text:'',notes:'',time:''});renderExamEntries();}
+function addExamRow(){examEntries.push({id:examNextId++,label:examCurrentSpeaker||'Q',text:'',notes:'',advice:'',time:''});renderExamEntries();}
+function insertExamRowAfter(id){
+  const idx=examEntries.findIndex(e=>e.id===id);
+  if(idx<0) return;
+  const newEntry={id:examNextId++,label:examEntries[idx].label,text:'',notes:'',advice:'',time:''};
+  examEntries.splice(idx+1,0,newEntry);
+  renderExamEntries();
+  setTimeout(()=>{
+    const ta=document.querySelector('#ee-'+newEntry.id+' .entry-ta');
+    if(ta) ta.focus();
+  },50);
+}
 function toggleExamLabel(id){const e=examEntries.find(e=>e.id===id);if(e){e.label=e.label==='Q'?'A':'Q';renderExamEntries();}}
 function updateExamField(id,field,val){const e=examEntries.find(e=>e.id===id);if(e)e[field]=val;}
-function delExamEntry(id){if(!confirm('この行を削除しますか？'))return;examEntries=examEntries.filter(e=>e.id!==id);renderExamEntries();}
+function delExamEntry(id){showConfirm('この行を削除しますか？','','削除',(ok)=>{if(!ok)return;examEntries=examEntries.filter(e=>e.id!==id);renderExamEntries();});}
 
 // ─── 口頭試問 Audio ───
 function toggleExamAudio(){
@@ -1328,6 +1585,17 @@ function toggleExamAudio(){
 // ─── 口頭試問 発言者切替 ───
 function switchExamSpeaker(){
   if(examFlushBuffer) examFlushBuffer();
+  if(window._nativeExamLatestText && window._nativeExamLatestText.trim()){
+    const el2 = EXAM_DURATION - examSecondsLeft;
+    const mm = Math.floor(el2/60).toString().padStart(2,'0'), ss = (el2%60).toString().padStart(2,'0');
+    examEntries.push({id:examNextId++,label:window._nativeExamSpeakerSnap||examCurrentSpeaker,text:window._nativeExamLatestText.trim(),notes:'',advice:'',time:mm+':'+ss});
+    renderExamEntries();
+  }
+  window._nativeExamLatestText = '';
+  window._nativeExamSpeakerSnap = null;
+  clearTimeout(window._nativeExamTimer);
+  window._nativeExamTimer = null;
+  document.getElementById('examLiveText').textContent = '';
   examCurrentSpeaker = examCurrentSpeaker === 'Q' ? 'A' : 'Q';
   updateExamSpeakerBar();
   toast(examCurrentSpeaker === 'Q' ? '🎤 Q 試験官' : '🎤 A 自分');
@@ -1355,7 +1623,7 @@ function endExamSession(){
   btn.disabled = true;
   document.getElementById('examEndBtn').disabled = true;
   document.getElementById('examRange').disabled = true;
-  document.querySelectorAll('#card-exam .btn:not(#examAudioPlayBtn):not([onclick*="downloadExamAudio"]):not([onclick*="toggleExamAudio"])').forEach(b => { b.disabled = true; });
+  document.querySelectorAll('#card-exam .btn:not(#examAudioPlayBtn):not([onclick*="downloadExamAudio"]):not([onclick*="toggleExamAudio"]):not([onclick*="setExamTimer"]):not([onclick*="addExamRow"]):not([onclick*="showExamCorrection"]):not([onclick*="resetExamTimerFull"])').forEach(b => { b.disabled = true; });
   finalizeExamRec();
   setExamStatus('done','録音・記録 確定済み');
   toast('口頭試問の録音と記録を確定しました');
@@ -1452,6 +1720,64 @@ function seekAudio(event, audioId){
   const ratio=Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width));
   const durMs = audioId==='audioEl' ? recDurationMs : examRecDurationMs;
   audioEl.currentTime=(durMs/1000)*ratio;
+}
+
+// ─── RNネイティブ音声認識からの受信 ───
+// isFinalに依存せず、無音1200msで自動確定する方式
+window.onNativeSRResult = function(text, isFinal) {
+  const liveEl = document.getElementById('liveText');
+  if(!isRecording || isPaused) return;
+  if(!text || !text.trim()) return;
+  liveEl.classList.add('show');
+  liveEl.textContent = (isFinal ? '✓ ' : '🎤 ') + text;
+  if(!window._nativeSpeakerSnap) window._nativeSpeakerSnap = currentSpeaker;
+  window._nativeLatestText = text; // 常に最新テキストを保持
+  clearTimeout(window._nativeSilenceTimer);
+  window._nativeSilenceTimer = setTimeout(()=>{
+    const t = (window._nativeLatestText || '').trim();
+    if(!t) return;
+    const el = TIMER_DURATION - timerSecondsLeft;
+    const mm = Math.floor(el/60).toString().padStart(2,'0'), ss = (el%60).toString().padStart(2,'0');
+    entries.push({id:nextId++,label:window._nativeSpeakerSnap||currentSpeaker,text:t,notes:'',advice:'',time:mm+':'+ss});
+    window._nativeLatestText = '';
+    window._nativeSpeakerSnap = null;
+    renderEntries(); enableBtns(); liveEl.textContent='';
+  }, 1200);
+};
+
+window.onNativeExamSRResult = function(text, isFinal) {
+  const liveEl = document.getElementById('examLiveText');
+  if(!isExamRecording || isExamPaused) return;
+  if(!text || !text.trim()) return;
+  liveEl.classList.add('show');
+  liveEl.textContent = (isFinal ? '✓ ' : '🎤 ') + text;
+  if(!window._nativeExamSpeakerSnap) window._nativeExamSpeakerSnap = examCurrentSpeaker;
+  window._nativeExamLatestText = text;
+  clearTimeout(window._nativeExamTimer);
+  window._nativeExamTimer = setTimeout(()=>{
+    const t = (window._nativeExamLatestText || '').trim();
+    if(!t) return;
+    const el2 = EXAM_DURATION - examSecondsLeft;
+    const mm = Math.floor(el2/60).toString().padStart(2,'0'), ss = (el2%60).toString().padStart(2,'0');
+    examEntries.push({id:examNextId++,label:window._nativeExamSpeakerSnap||examCurrentSpeaker,text:t,notes:'',advice:'',time:mm+':'+ss});
+    window._nativeExamLatestText = '';
+    window._nativeExamSpeakerSnap = null;
+    renderExamEntries(); liveEl.textContent='';
+  }, 1200);
+};
+
+// ─── カスタム確認モーダル ───
+let _confirmCallback = null;
+function showConfirm(msg, sub, okLabel, callback) {
+  document.getElementById('confirmMsg').textContent = msg;
+  document.getElementById('confirmSub').textContent = sub || '';
+  document.getElementById('confirmOkBtn').textContent = okLabel || 'OK';
+  _confirmCallback = callback;
+  document.getElementById('confirmModal').classList.add('show');
+}
+function confirmModal(result) {
+  document.getElementById('confirmModal').classList.remove('show');
+  if(_confirmCallback) { _confirmCallback(result); _confirmCallback = null; }
 }
 
 // ─── Toast ───
