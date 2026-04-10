@@ -887,20 +887,8 @@ const _recMime = getBestMimeType();
 
 async function startRec() {
   let hasAudio = false;
-  try {
-    audioStream = await navigator.mediaDevices.getUserMedia({audio:true});
-    allAudioChunks = [];
-    const opts = _recMime ? {mimeType: _recMime} : {};
-    mediaRecorder = new MediaRecorder(audioStream, opts);
-    mediaRecorder.ondataavailable = e => { if(e.data.size>0) allAudioChunks.push(e.data); };
-    mediaRecorder.start(500);
-    recDurationMs=0; recStartedAt=Date.now();
-    hasAudio = true;
-  } catch(e) {
-    // 録音は失敗してもSR（逐語録）は続行する
-  }
-isRecording=true; isPaused=false;
-  setTimeout(()=>startSpeechRecognition(), 1000); // 1秒遅らせる
+  isRecording=true; isPaused=false;
+  startSpeechRecognition();
   return hasAudio;
 }
 
