@@ -1134,6 +1134,7 @@ function startSpeechRecognition() {
     // network / aborted 等は無視して再開を onend に任せる
   };
   speechRecognition.onend=()=>{
+    alert('onend発火'); // ←追加
     if(isRecording&&!isPaused){
       // Android Chromeでは同一オブジェクトの再start()が失敗することがあるため
       // オブジェクトを作り直してから再起動する
