@@ -888,7 +888,17 @@ const _recMime = getBestMimeType();
 async function startRec() {
   let hasAudio = false;
   isRecording=true; isPaused=false;
-  startSpeechRecognition();
+  startSpeechRecognition(); // ←先にSR起動
+  try {
+    audioStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    allAudioChunks = [];
+    const opts = _recMime ? {mimeType: _recMime} : {};
+    mediaRecorder = new MediaRecorder(audioStream, opts);
+    mediaRecorder.ondataavailable = e => { if(e.data.size>0) allAudioChunks.push(e.data); };
+    mediaRecorder.start(500);
+    recDurationMs=0; recStartedAt=Date.now();
+    hasAudio = true;
+  } catch(e) {}
   return hasAudio;
 }
 
