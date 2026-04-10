@@ -899,8 +899,8 @@ async function startRec() {
   } catch(e) {
     // 録音は失敗してもSR（逐語録）は続行する
   }
-  isRecording=true; isPaused=false;
-  startSpeechRecognition();
+isRecording=true; isPaused=false;
+  setTimeout(()=>startSpeechRecognition(), 1000); // 1秒遅らせる
   return hasAudio;
 }
 
