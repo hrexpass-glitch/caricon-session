@@ -1139,6 +1139,7 @@ function startSpeechRecognition() {
         newSR.onerror=speechRecognition.onerror;
         newSR.onend=speechRecognition.onend;
         speechRecognition=newSR;
+        try{speechRecognition.start();}catch(e){} // ←これが抜けてた
       }, 200);
     }
   };
@@ -1586,7 +1587,20 @@ function startExamSpeechRecognition(){
     }
   };
   examSpeechRecognition.onerror=()=>{};
-  examSpeechRecognition.onend=()=>{ if(isExamRecording&&!isExamPaused) try{examSpeechRecognition.start();}catch(e){} };
+  examSpeechRecognition.onend=()=>{
+  if(isExamRecording&&!isExamPaused){
+    setTimeout(()=>{
+      if(!isExamRecording||isExamPaused) return;
+      const newSR=new SR();
+      newSR.lang='ja-JP'; newSR.continuous=false; newSR.interimResults=true;
+      newSR.onresult=examSpeechRecognition.onresult;
+      newSR.onerror=examSpeechRecognition.onerror;
+      newSR.onend=examSpeechRecognition.onend;
+      examSpeechRecognition=newSR;
+      try{examSpeechRecognition.start();}catch(e){}
+    },200);
+  }
+};
   try{examSpeechRecognition.start();}catch(e){}
 }
 // ─── 口頭試問 Entries (Q/A) ───
