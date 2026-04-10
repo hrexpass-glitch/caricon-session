@@ -889,6 +889,7 @@ async function startRec() {
   let hasAudio = false;
   isRecording=true; isPaused=false;
   startSpeechRecognition(); // ←先にSR起動
+  await new Promise(r => setTimeout(r, 500)); // ←この1行追加
   try {
     audioStream = await navigator.mediaDevices.getUserMedia({audio:true});
     allAudioChunks = [];
