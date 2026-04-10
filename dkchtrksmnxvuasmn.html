@@ -1083,7 +1083,6 @@ function startSpeechRecognition() {
     return;
   }
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  alert('SR=' + (SR ? 'あり' : 'なし')); // ←ここに追加
   if(!SR) {
     // iOS Safari等でSpeechRecognition非対応の場合
     const liveEl=document.getElementById('liveText');
@@ -1097,7 +1096,6 @@ function startSpeechRecognition() {
   speechRecognition=new SR();
   speechRecognition.lang='ja-JP'; speechRecognition.continuous=false; speechRecognition.interimResults=true;
   const liveEl=document.getElementById('liveText'); liveEl.classList.add('show');
-  alert('SR.start()直前'); // ←ここに追加
   let finalBuffer='', silenceTimer=null;
   mainFlushBuffer = ()=>{
     clearTimeout(silenceTimer);
@@ -1108,7 +1106,6 @@ function startSpeechRecognition() {
     renderEntries(); enableBtns(); finalBuffer=''; liveEl.textContent='';
   };
   speechRecognition.onresult=event=>{
-    alert('結果きた'); // ←追加
     let interim='',final='';
     for(let i=event.resultIndex;i<event.results.length;i++){
       const t=event.results[i][0].transcript;
@@ -1122,7 +1119,6 @@ function startSpeechRecognition() {
     }
   };
   speechRecognition.onerror=e=>{
-    alert('SRエラー:'+e.error); //
     // not-allowed: マイク拒否 → 再試行しない
     if(e.error==='not-allowed'||e.error==='service-not-allowed'){
       liveEl.textContent='⚠️ マイクの使用が許可されていません。ブラウザの設定を確認してください。';
@@ -1132,7 +1128,6 @@ function startSpeechRecognition() {
     // network / aborted 等は無視して再開を onend に任せる
   };
   speechRecognition.onend=()=>{
-    alert('onend発火'); // ←追加
     if(isRecording&&!isPaused){
       // Android Chromeでは同一オブジェクトの再start()が失敗することがあるため
       // オブジェクトを作り直してから再起動する
@@ -1144,7 +1139,6 @@ function startSpeechRecognition() {
         newSR.onerror=speechRecognition.onerror;
         newSR.onend=speechRecognition.onend;
         speechRecognition=newSR;
-        try{speechRecognition.start();}catch(e){}
       }, 200);
     }
   };
