@@ -1099,6 +1099,7 @@ function startSpeechRecognition() {
   speechRecognition=new SR();
   speechRecognition.lang='ja-JP'; speechRecognition.continuous=false; speechRecognition.interimResults=true;
   const liveEl=document.getElementById('liveText'); liveEl.classList.add('show');
+  alert('SR.start()直前'); // ←ここに追加
   let finalBuffer='', silenceTimer=null;
   mainFlushBuffer = ()=>{
     clearTimeout(silenceTimer);
