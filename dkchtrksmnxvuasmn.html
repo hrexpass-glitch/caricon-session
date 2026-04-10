@@ -1077,6 +1077,7 @@ function switchSpeaker() {
 
 // ─── Speech ───
 function startSpeechRecognition() {
+ alert('SR開始'); // ←この一行を追加
   // RN環境ではネイティブSRを使用
   if(window.ReactNativeWebView){
     document.getElementById('liveText').classList.add('show');
