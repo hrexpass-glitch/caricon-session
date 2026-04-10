@@ -1,36 +1,33 @@
-function startSpeechRecognition() {
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.continuous = true; // Enable continuous mode
-    recognition.lang = 'ja-JP'; // Set language to Japanese
-    recognition.interimResults = false; // Get only final results
-
-    recognition.onstart = () => {
-        console.log('Speech recognition started. Listening...');
-    };
-
-    recognition.onresult = (event) => {
-        const transcript = event.results[event.resultIndex][0].transcript;
-        console.log('Recognized speech:', transcript);
-        // Handle the recognized speech
-    };
-
-    recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        // Handle errors appropriately
-        if (event.error === 'no-speech') {
-            console.warn('No speech was detected. Trying again...');
-            startSpeechRecognition(); // Restart recognition
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Title Here</title>
+    <script>
+        function startSpeechRecognition() {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert('Speech recognition not supported in this browser.');
+                return;
+            }
+            var recognition = new webkitSpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            recognition.onresult = function(event) {
+                var transcript = event.results[event.resultIndex][0].transcript;
+                console.log('Speech recognized: ' + transcript);
+                // handle the recognized speech
+            };
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error detected: ' + event.error);
+            };
+            recognition.start();
         }
-    };
-
-    recognition.onend = () => {
-        console.log('Speech recognition ended. Restarting...');
-        startSpeechRecognition(); // Restart recognition
-    };
-
-    try {
-        recognition.start();
-    } catch (error) {
-        console.error('Failed to start speech recognition:', error);
-    }
-}
+    </script>
+</head>
+<body>
+    <h1>Hello, World!</h1>
+    <button onclick="startSpeechRecognition()">Start Speech Recognition</button>
+</body>
+</html>
