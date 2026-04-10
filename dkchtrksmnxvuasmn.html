@@ -1077,7 +1077,6 @@ function switchSpeaker() {
 
 // ─── Speech ───
 function startSpeechRecognition() {
- alert('SR開始'); // ←この一行を追加
   // RN環境ではネイティブSRを使用
   if(window.ReactNativeWebView){
     document.getElementById('liveText').classList.add('show');
@@ -1086,6 +1085,7 @@ function startSpeechRecognition() {
     return;
   }
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  alert('SR=' + (SR ? 'あり' : 'なし')); // ←ここに追加
   if(!SR) {
     // iOS Safari等でSpeechRecognition非対応の場合
     const liveEl=document.getElementById('liveText');
