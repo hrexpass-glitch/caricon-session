@@ -1123,6 +1123,7 @@ function startSpeechRecognition() {
     }
   };
   speechRecognition.onerror=e=>{
+    alert('SRエラー:'+e.error); //
     // not-allowed: マイク拒否 → 再試行しない
     if(e.error==='not-allowed'||e.error==='service-not-allowed'){
       liveEl.textContent='⚠️ マイクの使用が許可されていません。ブラウザの設定を確認してください。';
